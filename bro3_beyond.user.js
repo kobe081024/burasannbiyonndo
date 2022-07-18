@@ -4,7 +4,7 @@
 // @include		https://*.3gokushi.jp/*
 // @include		http://*.3gokushi.jp/*
 // @description	ブラウザ三国志beyondリメイク by Craford 氏 with RAPT
-// @version		1.09.13
+// @version		1.09.16
 // @updateURL	http://craford.sweet.coocan.jp/content/tool/beyond/bro3_beyond.user.js
 
 // @grant	GM_addStyle
@@ -92,6 +92,15 @@
 //						12/23の運営仕様変更に伴い、下記機能が使えなくなっていた問題を修正
 //						- デッキ：ファイルに下げるボタンを1クリックで使用に変更
 //						- デッキ：内政官を1クリックでファイルに下げるボタンを追加
+// 1.09.14	2022/02/24	RAPT. メニューへ「同盟＞友軍状況」を追加
+//						メニューへ「デッキ＞警護デッキ」を追加
+//						メニューへ「デッキ＞軍議所」を追加
+// 1.09.15	2022/06/19	RAPT. 簡易デッキセット機能で、警護デッキ対応
+//						- メニューへ「同盟＞同盟ログ＞友軍」を追加
+//						- メニューへ「報告書＞友軍」を追加
+// 1.09.16	2022/07/18	RAPT. メニュー「クエスト」に通常クエスト、育成クエストを追加
+//						- メニューへ「プロフィール＞歴史書」を追加
+//						- メニューへ「統計＞資源＞個別、集計、武将、自動軍費チャージ」を追加
 
 //	トレード画面の修行効率表示にSLを追加
 //
@@ -99,6 +108,8 @@
 // 内政ボタンで、拠点を変更せずにセットする新方式対応
 // 回復系スキルは、空いている拠点で実行するオプション
 // 内政ボタン/内政スキルで、すでにその拠点に内政官がいる場合、置き換えるかの確認。「呉の治世」スキル発動中です。内政官を置き換えますか？　はい「いいえ」
+// 自動ラベル変更の変更先をファイル上部へ戻す
+// 超覇合成したカードで自動SLVUPできない
 
 // ローカル開発なので、uploadする前に正規バージョンにすること
 //----------------------------------------------------------------------
@@ -3866,6 +3877,7 @@ function execCommonPart() {
 						['獲得武勲', BASE_URL + '/user/decoration.php'],
 						['表示設定', BASE_URL + '/user/disp_config.php'],
 						['君主官位', BASE_URL + '/user/deck_power_grade'],
+						['歴史書', BASE_URL + '/historybook/game_result.php'],
 						['改武将カードカスタマイズ', BASE_URL + '/card_customize/make_select.php'],
 					],
 				],
@@ -3889,13 +3901,14 @@ function execCommonPart() {
 			],
 			// 同盟
 			[
+				['友軍状況', alurl + '/friendly_army.php'],
 				['同盟ログ', BASE_URL + '/alliance/alliance_log.php',
 					[
 						['全て', alogurl], ['攻撃', alogurl + '?m=attack'], ['防御', alogurl + '?m=defense'], ['偵察', alogurl + '?m=scout'],
-						['破壊', alogurl + '?m=fall'], ['援軍', alogurl + '?m=reinforcement'], ['同盟', alogurl + '?m=alliance'],
+						['破壊', alogurl + '?m=fall'], ['援軍', alogurl + '?m=reinforcement'], ['友軍', alogurl + '?m=friendly_army'], ['同盟', alogurl + '?m=alliance'],
 					],
 				],
-				['ランキング', alurl + '/ranking.php'], ['友軍状況', alurl + '/friendly_army.php'], ['勢力リスト', alurl + '/dependency.php'], ['同盟掲示板', BASE_URL + '/bbs/topic_view.php'],
+				['ランキング', alurl + '/ranking.php'], ['勢力リスト', alurl + '/dependency.php'], ['同盟掲示板', BASE_URL + '/bbs/topic_view.php'],
 				['同盟スキル', alurl + '/alliance_skill.php'],
 				['管理', alurl + '/manage.php'],
 				['配下同盟管理', alurl + '/manage_dep.php'],
@@ -3921,25 +3934,44 @@ function execCommonPart() {
 				['内政設定', BASE_URL + '/card/domestic_setting.php'],
 				['デッキ', BASE_URL + '/card/deck.php',
 					[
+						['警護デッキ', BASE_URL + '/card/deck.php?deck_mode=2'],
 						['カード入手履歴', BASE_URL + '/busyodas/busyodas_history.php'],
 						['カード一括破棄', BASE_URL + '/card/allcard_delete.php'],
 					],
 				],
-                ['ファイル', BASE_URL + '/card/deck.php',
+				['軍議所', BASE_URL + '/council/',
 					[
-						['R', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=30&l=0&p=1&weather_id=2'],
-						['SR', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=40&l=0&p=1&weather_id=2'],
-                        ['UR', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=50&l=0&p=1&weather_id=2'],
-						['L', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=60&l=0&p=1&weather_id=2'],
-                        ['SL', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=70&l=0&p=1&weather_id=2'],
-					],
-				],
-                 ['スキル検索', BASE_URL + '/card/deck.php',
-					[
-						['施術', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=1&search_configs%5Bq%5D=施術&l=0&p=1&weather_id=3'],
-						['神医', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=1&search_configs%5Bq%5D=神医&l=0&p=1&weather_id=3'],
-                        ['弓腰姫の愛', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=1&search_configs%5Bq%5D=弓腰姫の愛&l=0&p=1&weather_id=3'],
-						['蜜柑の湯薬', BASE_URL + '/card/deck.php?search_configs%5Btype%5D=1&search_configs%5Bq%5D=蜜柑の湯薬&l=0&p=1&weather_id=3'],
+						['軍費貯蓄', BASE_URL + '/council/council_point.php',
+							[
+								['上限UP', BASE_URL + '/council/arms.php?council_function_id=206'],
+							],
+						],
+						['号令', BASE_URL + '/council/?tab=1',
+							[
+								['発動中', BASE_URL + '/council/order.php?order_type=0'],
+								['攻撃', BASE_URL + '/council/order.php?order_type=1'],
+								['防御', BASE_URL + '/council/order.php?order_type=2'],
+								['鹵獲', BASE_URL + '/council/order.php?order_type=3'],
+								['援軍', BASE_URL + '/council/order.php?order_type=4'],
+								['友軍', BASE_URL + '/council/order.php?order_type=5'],
+								['南蛮', BASE_URL + '/council/order.php?order_type=6'],
+								['回復', BASE_URL + '/council/order.php?order_type=7'],
+							],
+						],
+						['軍備', BASE_URL + '/council/?tab=2',
+							[
+								['施設建設技術', BASE_URL + '/council/arms.php?council_function_id=201'],
+								['訓練技術', BASE_URL + '/council/arms.php?council_function_id=202'],
+								['再訓練技術', BASE_URL + '/council/arms.php?council_function_id=203'],
+								['忠誠心上限アップ', BASE_URL + '/council/arms.php?council_function_id=204'],
+								['強化忠誠心攻撃', BASE_URL + '/council/arms.php?council_function_id=205'],
+								['軍費貯蓄拡大', BASE_URL + '/council/arms.php?council_function_id=206'],
+								['名声獲得', BASE_URL + '/council/arms.php?council_function_id=207'],
+							],
+						],
+						['農村', BASE_URL + '/council/?tab=3'],
+						['設計', BASE_URL + '/council/?tab=4'],
+						['南蛮', BASE_URL + '/council/?tab=5'],
 					],
 				],
 				['合成', BASE_URL + '/union/index.php',
@@ -3959,25 +3991,25 @@ function execCommonPart() {
 					[
 						['ファイル', BASE_URL + '/card/card_stock_file.php'],
 						['ストック', BASE_URL + '/card/card_stock.php'],
-                        ['R貂蝉', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=1&search_configs%5Bq%5D=素材&l=&p='],
-                       ['SR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=40&l=&p='],
-                        ['UR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=50&l=&p='],
-                         ['L', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=60&l=&p='],
+                           ['R貂蝉', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=1&search_configs%5Bq%5D=素材&l=&p='],
+                      ['SR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=40&l=&p='],
+                      ['UR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=50&l=&p='],
+                        ['L', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=60&l=&p='],
 　　　　　　　　　　　　　　　　　　　　　　 ['SL', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=70&l=&p='],
 					],
 				],
-                ['一括破棄BP+入手', BASE_URL + '/card/allcard_delete.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B9%5D%5B%5D=1&l=&p='],
+　　　　　　　　　　　　　　 ['一括破棄BP+入手', BASE_URL + '/card/allcard_delete.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B9%5D%5B%5D=1&l=&p='],
 				['トレード検索', '',
 					[
-                        ['明鏡', sklurl + '明鏡'],
-                        ['明鑑', sklurl + '明鑑'],
+　　　　　　　　　　　　　　　　　　　　['明鏡', sklurl + '明鏡'],
+　　　　　　　　　　　　　　　　　　　　 ['明鑑', sklurl + '明鑑'],
 						['スキル別', '',
 							[
 								['HP回復', '',
 									[
 										['仁君', sklurl + '仁君'], ['弓腰姫の愛', sklurl + '弓腰姫の愛'], ['桃色吐息', sklurl + '桃色吐息'],
-										['神医の施術', sklurl + '神医の施術'], ['神医の術式', sklurl + '神医の術式'],
-                                        ['酔吟吐息', sklurl + '酔吟吐息'], ['神卜の方術', sklurl + '神卜の方術'],
+										['神医の施術', sklurl + '神医の施術'], ['神医の術式', sklurl + '神医の術式'], ['発憤興起', sklurl + '発憤興起'],
+										['酔吟吐息', sklurl + '酔吟吐息'], ['神卜の方術', sklurl + '神卜の方術'],
 									]
 								],
 								['討伐回復', '',
@@ -4105,7 +4137,14 @@ function execCommonPart() {
 						['週間', BASE_URL + '/user/weekly_ranking.php'],
 					],
 				],
-				['資源', BASE_URL + '/material/auto_capture_material/result.php'],
+				['資源', BASE_URL + '/material/auto_capture_material/result.php',
+					[
+						['個別', BASE_URL + '/material/auto_capture_material/result.php'],
+						['集計', BASE_URL + '/material/auto_capture_material/result.php?m=summary'],
+						['武将', BASE_URL + '/material/auto_capture_material/result.php?m=summary_card'],
+						['自動軍費チャージ', BASE_URL + '/material/auto_capture_material/result.php?m=council_point'],
+					],
+				],
 			],
 			// 報告書
 			[
@@ -4116,6 +4155,7 @@ function execCommonPart() {
 				['偵察', BASE_URL + '/report/list.php?m=scout&u='],
 				['破壊', BASE_URL + '/report/list.php?m=fall&u='],
 				['援軍', BASE_URL + '/report/list.php?m=reinforcement&u='],
+				['友軍', BASE_URL + '/report/list.php?m=friendly_army&u='],
 				['同盟', BASE_URL + '/report/list.php?m=alliance&u='],
 				['南蛮襲来', BASE_URL + '/report/list.php?m=npc_assault&u='],
 			],
@@ -4128,14 +4168,8 @@ function execCommonPart() {
 			],
 			// クエスト
 			[
-				['すべて', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=1'],
-				['基本', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=2'],
-				['内政', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=3'],
-				['戦闘', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=4'],
-				['同盟', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=5'],
-				['武将', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=6'],
-				['繰り返し', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=7'],
-				['期間限定', BASE_URL + '/quest/index.php?list=1&p=1&action=apply_condition&disp_mode=0&scroll_pos=0&selected_tab=8'],
+				['通常クエスト', BASE_URL + '/quest/index.php'],
+				['育成クエスト', BASE_URL + '/quest/index.php?quest_type=2'],
 				['デイリー受領', 'id:receipt_quest'],
 			],
 		];
@@ -7687,6 +7721,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 						"<div>" +
 							"<input type='button' id='deck_domestic_" + i + "' style='font-size: 10px;' value='内政'></input>" +
 							"<input type='button' id='deck_set_" + i + "' style='font-size: 10px;' value='配置'></input>" +
+							"<input type='button' id='deck_defense_" + i + "' style='font-size: 10px;' value='警護'></input>" +
 							"<span style='margin-left: 1px; font-size: 12px;'>" +
 								selects.prop('outerHTML') +
 							"</span>" +
@@ -7697,6 +7732,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 						"<div>" +
 							"<input type='button' style='font-size: 10px;' value='内政' disabled></input>" +
 							"<input type='button' style='font-size: 10px;' value='配置' disabled></input>" +
+							"<input type='button' style='font-size: 10px;' value='警護' disabled></input>" +
 							"<span style='margin-left: 1px; font-size: 12px;'>" +
 								selects.prop('outerHTML') +
 							"</span>" +
@@ -7711,7 +7747,18 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 						q$(this).parent().children('input[type="button"]').prop("disabled", true);
 
 						// デッキセット処理
-						exec_deck_set(q$(this));
+						exec_deck_set(q$(this), false);
+					}
+				);
+
+				// イベント定義(警護)
+				q$("input[id='deck_defense_" + i + "']").on('click',
+					function() {
+						// 状態変更
+						q$(this).parent().children('input[type="button"]').prop("disabled", true);
+
+						// デッキセット処理
+						exec_deck_set(q$(this), true);
 					}
 				);
 
@@ -8222,13 +8269,20 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 	// 各種デッキ制御用メソッド //
 	//--------------------------//
 	// デッキセット
-	function exec_deck_set(element) {
+	function exec_deck_set(element, isDefense) {
 		var elembase = element.parents("div[class='cardStatusDetail label-setting-mode']");
 		var elems_l = q$("div[class^='left']", elembase);
 		var match = q$("div[class='illustMini'] a[class^='thickbox']", elems_l).attr('href').match(/inlineId=cardWindow_(\d+)/);
 
+		var deckMode = '';
+		var deckTo = 'デッキ';
+		if (isDefense) {
+			deckMode = '?deck_mode=2';
+			deckTo = '警護デッキ';
+		}
+
 		// 状態表示
-		element.parents("div[class='cardStatusDetail label-setting-mode']").find("div[class*=set]").eq(0).attr('class','set dis_set_mini').css('background-color', 'pink').html("デッキセット中");
+		element.parents("div[class='cardStatusDetail label-setting-mode']").find("div[class*=set]").eq(0).attr('class','set dis_set_mini').css('background-color', 'pink').html(deckTo + "セット中");
 
 		// 拠点IDの取得
 		var village_id = element.parent().find('select').val();
@@ -8241,9 +8295,9 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 
 		// 送信データ作成
 		var ssid = getSessionId();
-		var target_url = BASE_URL + '/card/deck.php';
+		var target_url = BASE_URL + '/card/deck.php' + deckMode;
 		var param = {'ssid':ssid, 'target_card':card_id, 'mode':'set'};
-		param["selected_village[" + card_id + "]"] = village_id;
+		param[`selected_village[${card_id}]`] = village_id;
 
 		// 通信処理
 		q$.ajax({
@@ -8255,7 +8309,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 		})
 		.done(function(res) {
 			// 状態変更
-			element.parents("div[class='cardStatusDetail label-setting-mode']").find("div[class='set dis_set_mini']").eq(0).css('background-color', 'pink').html("デッキセット済");
+			element.parents("div[class='cardStatusDetail label-setting-mode']").find("div[class='set dis_set_mini']").eq(0).css('background-color', 'pink').html(deckTo + "セット済");
 		});
 	}
 
