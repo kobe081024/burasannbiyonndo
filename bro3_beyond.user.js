@@ -4,7 +4,7 @@
 // @include		https://*.3gokushi.jp/*
 // @include		http://*.3gokushi.jp/*
 // @description	ブラウザ三国志beyondリメイク by Craford 氏 with RAPT
-// @version		1.09.25
+// @version		1.09.27coach
 // @updateURL	http://craford.sweet.coocan.jp/content/tool/beyond/bro3_beyond.user.js
 
 // @grant	GM_addStyle
@@ -117,9 +117,12 @@
 // 1.09.25	2023/01/09	RAPT. 「デッキ：内政スキル使用リンクの追加」内政スキル発動を高速化
 //						- 回復系スキルは、拠点を変更せずに空いている拠点で実行するように(緑色)
 //						- 自動スキルLVUP、カード検索、内政スキル使用など、スキル系の機能について、SLカードやL覇など5スキル対応カードでも動作するように
+// 1.09.26	2023/04/29	RAPT. 2023/04/27のメンテナンス以降において、デッキ画面の仕様変更により、デッキ系の機能が動作しなくなっていたのを修正
+// 1.09.27	2023/04/29	RAPT. メニューに北伐関係の項目を追加
 
 
 // TODO:
+
 // 内政ボタン/内政スキルで、すでにその拠点に内政官がいる場合、置き換えるかの確認。「呉の治世」スキル発動中です。内政官を置き換えますか？　はい「いいえ」
 
 // ローカル開発なので、uploadする前に正規バージョンにすること
@@ -262,7 +265,7 @@ var DECK_02 = 'de02';		// 共通：トレードへのリンクを追加
 var DECK_03 = 'de03';		// 共通：ページ切り替えのプルダウンを追加
 var DECK_11 = 'de11';		// デッキ：ファイル内スキル検索機能の追加
 var DECK_12 = 'de12';		// デッキ：スキル補正効果表示機能の追加
-var DECK_13 = 'de13';		// デッキ：内政スキル使用リンクの追加（回復：赤/紫、内政：青）
+var DECK_13 = 'de13';		// デッキ：内政スキル使用リンクの追加（回復：赤、内政：青）
 var DECK_14 = 'de14';		// デッキ：1クリックデッキセットボタン追加
 var DECK_15 = 'de15';		// デッキ：ファイルに下げるボタンを1クリックで使用に変更
 var DECK_16 = 'de16';		// デッキ：内政官を1クリックでファイルに下げるボタンを追加
@@ -541,7 +544,7 @@ function addGlobalStyles() {
 			text-decolation: underline; \
 			color: red; \
 		} \
-		.skg { \
+          .skg { \
 			cursor: pointer; \
 			text-decolation: underline; \
 			color: orange; \
@@ -552,7 +555,7 @@ function addGlobalStyles() {
 		.skr:hover { \
 			font-weight: bold; \
 		} \
-		.skg:hover { \
+         .skg:hover { \
 			font-weight: bold; \
 		} \
 		.m4l { \
@@ -1776,7 +1779,7 @@ function mapTabControl() {
 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='checkoff_all' type='button' value='選択解除'>" +
 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_all' type='button' value='全選択'>" +
 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_gauge_100' type='button' value='討伐99以下を選択'>" +
-						"<input style='margin-bottom: 4px;' id='check_gauge_max' type='button' value='討伐00以下を選択'>" +
++						"<input style='margin-bottom: 4px;' id='check_gauge_max' type='button' value='討伐00以下を選択'>" +
 					"</div>" +
 					"<div>" +
 						html +
@@ -3488,7 +3491,7 @@ function cardbookControl() {
 			var select_id = id_name + '_select';
 			var addHtml = "<div style='margin-bottom: 4px;'><select id='" + select_id + "' name='" + select_id + "' style='width: 220px;'><option value=''>指定なし</option>";
 
-			var skills = q$("ul[class^='back_skill'] li");
+			var skills = q$("ul[class='back_skill'] li");
 			for (var j = 0; j < skills.length; j++) {
 				var skill = skills.eq(j).children("span[class*=skillName]").text().replace(/[ \t\r\n]/g, "");
 				var skill_text = skills.eq(j).children("div[class*=skill]").text().replace(/[ \t\r\n]/g, "");
@@ -3528,7 +3531,7 @@ function cardbookControl() {
 					}
 
 					// スキル説明文への直接アクセス導線を作る
-					q$("ul[class^='back_skill'] li div[class*='skill']", q$(this).parents("div[class='busyo-search-result_card-detail clearfix']")).each(
+					q$("ul[class='back_skill'] li div[class*='skill']", q$(this).parents("div[class='busyo-search-result_card-detail clearfix']")).each(
 						function(index) {
 							q$(this).attr('id', 'skill_text_' + index);
 						}
@@ -4023,10 +4026,10 @@ function execCommonPart() {
                      ['SR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=40&l=&p='],
                     ['UR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=50&l=&p='],
                        ['L', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=60&l=&p='],
-　　　　　　　　　　　　　　　　　　　　　　 ['SL', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=70&l=&p='],
+                        ['SL', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=70&l=&p='],
 					],
 				],
-                 ['一括破棄BP+入手', BASE_URL + '/card/allcard_delete.php?card_filter%5B9%5D%5B%5D=1&s=rarity&o=a'],
+                ['一括破棄BP+入手', BASE_URL + '/card/allcard_delete.php?card_filter%5B9%5D%5B%5D=1&s=rarity&o=a'],
 				['トレード検索', '',
 					[
 						['スキル別', '',
@@ -7319,7 +7322,7 @@ function addDropDeckCard() {
 	}
 
 	// ファイルに戻すボタンのイベントを書き換える
-	var deckcards = q$("#deck_tab div[class^='cardColmn']");
+	var deckcards = q$(".deck_tab:eq(0) div[class^='cardColmn']");
 	for (var i = 0; i < deckcards.length; i++) {
 		var base = q$("div[class='clearfix']", deckcards.eq(i));
 		var inner_a = base.children('a');
@@ -7331,7 +7334,8 @@ function addDropDeckCard() {
 				inner_a.replaceWith("<span class='pointer' id='card_" + match[1] + "'>" + inner_a.html() + "</span>");
 				base.children('span').on(
 					'click', function() {
-						var match = q$(this).attr('id').match(/_([0-9].*)/);
+
+                        var match = q$(this).attr('id').match(/_([0-9].*)/);
 						card_id = match[1];
 
 						// 状態更新
@@ -7393,7 +7397,7 @@ function addDropDomesticDeckCard() {
 	var village_id = q$("#deck_add_selected_village").val();
 
 	// ファイルに戻すボタンのイベントを書き換える
-	var deckbase = q$("#deck_tab form[class='clearfix']");
+	var deckbase = q$(".deck_tab:eq(0) form[class='clearfix']");
 	var deckcards = deckbase.children("div[class^='cardColmn']");
 	for (var i = 0; i < deckcards.length; i++) {
 		var base = q$("div[class='clearfix']", deckcards.eq(i));
@@ -7589,7 +7593,7 @@ function addReturnDeckCard() {
 	}
 
 	// ファイルに戻すボタンのイベントを書き換える
-	var deckbase = q$("#deck_tab form[class='clearfix']");
+	var deckbase = q$(".deck_tab:eq(0) form[class='clearfix']");
 	var deckcards = deckbase.children("div[class^='cardColmn']");
 	for (var i = 0; i < deckcards.length; i++) {
 		var base = q$("div[class='clearfix']", deckcards.eq(i));
@@ -7726,7 +7730,8 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 	var deckcards = q$("#cardListDeck form[class='clearfix']").children("div[class='cardColmn']");
 	var cards = q$("#cardFileList div[class='cardStatusDetail label-setting-mode']");
 
-	var villages = [];
+
+var villages = [];
 	var domesticMainVacantCost = 0;	// 内政用本拠空きコスト
 	var domesticSubVacantCost = 0;	// 内政用拠点空きコスト
 	var useSkillVillageId = 0;		// 回復系スキル発動拠点ID
@@ -7786,7 +7791,6 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 			var match = q$("div[class='illustMini'] a[class^='thickbox']", elems_l).attr('href').match(/inlineId=cardWindow_(\d+)/);
 			var skills = q$("div[id='cardWindow_" + match[1] + "'] ul[class^='back_skill'] li", cards.eq(i));
 			var skillTexts = q$("div[id='cardWindow_" + match[1] + "'] ul[class^='back_skill'] div", cards.eq(i));
-
 			// デッキにセットできるかチェック
 			var is_active = false;
 			if (elems_l.children("div[class='set']").length == 1) {
@@ -7818,10 +7822,9 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 						// 使用済みスキルは除外
 						continue;
 					}
-
-					// 現在拠点の取得
+                   // 現在拠点の取得
 					var village_id = q$("#deck_add_selected_village").val();
-					var village_info = (function(){
+                    					var village_info = (function(){
 						var info = null;
 						q$.each(villages, function() {
 							if (this.village_id === parseInt(village_id, 10)) {
@@ -7837,7 +7840,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 						// スキル発動拠点はどこでもいいスキルか
 						var anyVillage = is_healing_skill_at_anywhere(skillTexts.eq(j).text());
 
-						// 回復系、発動拠点はどこでもいい：紫、指定した拠点：赤
+						// 回復系、発動拠点はどこでもいい：緑、指定した拠点：赤
 						var use_link_html = `<span class='${anyVillage?"skg":"skr"}'>[使用]</span>`;
 						target_el.html(use_link_html);
 						target_el.eq(0).on(
@@ -7850,7 +7853,6 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 									var recover_html = q$(this).parent().children('td').html();
 
 									var elembase = q$(this).parents("div[class='cardStatusDetail label-setting-mode']");
-
 									// コストチェック
 									var card_cost = parseFloat(q$('div.right table.statusParameter1 tr:eq(3) td:eq(0)', elembase).text());
 									if (card_cost > useSkillVacantCost) {
@@ -7930,9 +7932,8 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 									// 現在のスキルhtml取得
 									var recover_html = q$(this).parent().children('td').html();
 
-									var elembase = q$(this).parents("div[class='cardStatusDetail label-setting-mode']");
-
 									var card_cost = parseFloat(q$('div.right table.statusParameter1 tr:eq(3) td:eq(0)', elembase).text());
+
 
 									if (village_info.isset_domestic) {
 										alert(`${village_info.village_name}に内政設定済みの武将がいるため使用できません`);
@@ -7950,14 +7951,13 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 
 									// 使用スキルの取得
 									var use_skill = q$(this).parent().children('td').text().replace(/[ \t\r\n]/g, "").replace(/\(T\)/, '');
-
-									var skill_info = getSkillInfo(use_skill, q$('div.set a.control__button--deck-set-small', elembase).attr('href'));
+　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　var skill_info = getSkillInfo(use_skill, q$('div.set a.control__button--deck-set-small', elembase).attr('href'));
 									var skill_id = skill_info.skill_id;
 									var card_id = skill_info.card_id;
 
 									// スキル発動で終了（＝内政）
 
-									// ステータス表示変更
+                                    // ステータス表示変更
 									q$(this).parent().children('td').html(
 										"<span style='color: blue;'>スキルEXEX発動中</span>"
 									);
@@ -8144,7 +8144,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 			var select_id = id_name + '_select';
 			var addHtml = "<div style='margin-bottom: 4px;'><select id='" + select_id + "' style='width: 200px;'><option value=''>指定なし</option>";
 
-			var skills = q$("ul[class^='back_skill'] li", deckcards.eq(i).children("div[id*='card_frontback']").eq(0));
+			var skills = q$("ul[class='back_skill'] li", deckcards.eq(i).children("div[id*='card_frontback']").eq(0));
 			for (var j = 0; j < skills.length; j++) {
 				var skill = skills.eq(j).children("span[class*=skillName]").text().replace(/[ \t\r\n]/g, "");
 				if (skill != "") {
@@ -8211,7 +8211,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 					}
 
 					// スキル説明文への直接アクセス導線を作る
-					q$("ul[class^='back_skill'] li div[class*='skill']", q$(this).parents("div[id*='card_frontback']")).each(
+					q$("ul[class='back_skill'] li div[class*='skill']", q$(this).parents("div[id*='card_frontback']")).each(
 						function(index) {
 							q$(this).attr('id', 'skill_text_' + index);
 						}
@@ -8234,7 +8234,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 			var match = q$("div[class='illustMini'] a[class^='thickbox']", elems_l).attr('href').match(/inlineId=cardWindow_(\d+)/);
 			var cid = match[1];
 
-			var skills = q$("div[id='cardWindow_" + cid + "'] ul[class^='back_skill'] li", cards.eq(i));
+			var skills = q$("div[id='cardWindow_" + cid + "'] ul[class='back_skill'] li", cards.eq(i));
 			for (var j = 0; j < skills.length; j++) {
 				var skill = skills.eq(j).children("span").text().replace(/[ \t\r\n]/g, "");
 				if (skill != "" && skill.match(/^副/) == null) {
@@ -8298,7 +8298,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 			}
 
 			// スキル説明文への直接アクセス導線を作る
-			q$("div[id='cardWindow_" + cid + "'] ul[class^='back_skill'] li div[class*='skill']", cards.eq(i)).each(
+			q$("div[id='cardWindow_" + cid + "'] ul[class='back_skill'] li div[class*='skill']", cards.eq(i)).each(
 				function(index) {
 					q$(this).attr('id', 'skill_text_' + index);
 				}
@@ -8608,9 +8608,9 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 	function exec_domestic_step1(element) {
 		var elembase = element.parents("div[class='cardStatusDetail label-setting-mode']");
 		var card_id = q$(elembase).data('card-id');
-
 		// 拠点IDの取得
 		var village_id = element.parent().find('select').val();
+
 
 		// ステータス表示変更
 		elembase.find("div[class*='set']").eq(0).attr('class','set dis_set_mini').css('background-color', 'pink').html("拠点変更中");
@@ -9742,7 +9742,6 @@ function exec_domestic_skill_step_final(element, card_id, success_func, fail_fun
 		}, AJAX_REQUEST_INTERVAL
 	);
 }
-
 // スキルリンクを渡すと、indexから始まるスキル情報のリストを返す
 function parseSkillListQuery(queryString) {
 	var entries = new URLSearchParams(queryString).entries();
@@ -9792,9 +9791,9 @@ function getSkillInfo(skillName, queryString) {
 		if (this.skill_name === skillName) {
 			info = Object.assign({}, this);
 			return false;
-		}
+	　　　　　　　}
 	});
-	return info;
+　　　return info;
 }
 
 // 基本となるデッキ情報
@@ -9805,8 +9804,8 @@ function basicDeckInfo() {
 	var deckCostVacantNormal = [0, 0];	// 通常デッキの空きコスト
 	var deckCostVacantDefense = [0, 0]; // 警護デッキの空きコスト
 	var maxCost = 0; // 最大コスト
-	if (q$('#deck_tab')) {
-		q$('#deck_tab .state span.volume').each(function(){
+	if (q$('#cardListDeck .deck_tab:eq(0)').length) {
+		q$('#cardListDeck .deck_tab:eq(0) .state span.volume').each(function(){
 			var kind = q$(this).data('deck-kind');
 			var m = q$(this).text().match(/([\.\d]+)\s*\/\s*([\.\d]+)/);
 			if ((kind === 1 || kind === 2) && m.length === 3) {
@@ -10032,7 +10031,7 @@ function is_healing_skill(skill_text) {
 
 	// 戦闘系、個人専用、忠誠回復系スキルは false
 	var isExcludeSkillText = ['戦闘', '自身', '忠誠'];
-	for (var i = 0; i < isExcludeSkillText.length; i++) {
+　	for (var i = 0; i < isExcludeSkillText.length; i++) {
 		if (skill_text.indexOf(isExcludeSkillText[i]) != -1) {
 			return false;
 		}
@@ -10068,7 +10067,6 @@ function is_healing_skill_at_anywhere(skill_text) {
 
 	return true;
 }
-
 //------------------------------//
 // beyondの設定の読み込み・保存 //
 //------------------------------//
@@ -10117,7 +10115,7 @@ function getDefaultOptions() {
 	settings[DECK_03] = true;		// 共通：ページ切り替えのプルダウンを追加
 	settings[DECK_11] = true;		// デッキ：ファイル内スキル検索機能の追加
 	settings[DECK_12] = true;		// デッキ：スキル補正効果表示機能の追加
-	settings[DECK_13] = true;		// デッキ：内政スキル使用リンクの追加（回復：赤/緑、内政：青）
+	settings[DECK_13] = true;		// デッキ：内政スキル使用リンクの追加（回復：赤、内政：青）
 	settings[DECK_14] = true;		// デッキ：1クリックデッキセットボタン追加
 	settings[DECK_15] = false;		// デッキ：ファイルに下げるボタンを1クリックで使用に変更
 	settings[DECK_16] = false;		// デッキ：内政官を1クリックでファイルに下げるボタンを追加
