@@ -7824,7 +7824,7 @@ var villages = [];
 					}
                    // 現在拠点の取得
 					var village_id = q$("#deck_add_selected_village").val();
-                    					var village_info = (function(){
+					var village_info = (function(){
 						var info = null;
 						q$.each(villages, function() {
 							if (this.village_id === parseInt(village_id, 10)) {
@@ -7931,7 +7931,7 @@ var villages = [];
 
 									// 現在のスキルhtml取得
 									var recover_html = q$(this).parent().children('td').html();
-
+									var elembase = q$(this).parents("div[class='cardStatusDetail label-setting-mode']");
 									var card_cost = parseFloat(q$('div.right table.statusParameter1 tr:eq(3) td:eq(0)', elembase).text());
 
 
