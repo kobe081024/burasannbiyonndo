@@ -219,8 +219,8 @@ var BASE_URL = SERVER_SCHEME + location.hostname;
 var SERVER_NAME = location.hostname.match(/^(.*)\.3gokushi/)[1];
 var SORT_UP_ICON = BASE_URL + "/20160427-03/extend_project/w945/img/trade/icon_up.gif";
 var SORT_DOWN_ICON = BASE_URL + "/20160427-03/extend_project/w945/img/trade/icon_down.gif";
-var AJAX_REQUEST_INTERVAL = 200;   // (ms)
-
+//var AJAX_REQUEST_INTERVAL = 200;   // (ms)
+var AJAX_REQUEST_INTERVAL = 100; // (ms)
 //----------------------------------------------------------------------
 // 画面設定項目-保存フィールド名対応定数群
 //----------------------------------------------------------------------
@@ -270,8 +270,7 @@ var DECK_14 = 'de14';		// デッキ：1クリックデッキセットボタン�
 var DECK_15 = 'de15';		// デッキ：ファイルに下げるボタンを1クリックで使用に変更
 var DECK_16 = 'de16';		// デッキ：内政官を1クリックでファイルに下げるボタンを追加
 var DECK_17 = 'de17';		// デッキ：内政官以外を1クリックで全てファイルに下げるボタンを追加
-var DECK_18 = 'de18';		// デッキ：警護一括デッキセット機能を追加
-var DECK_20 = 'de20';		// デッキ：一括デッキセット機能を追加
+var DECK_18 = 'de18';		// デッキ：一括デッキセット機能を追加
 var DECK_19 = 'de19';		// デッキ：内政官解除後にデッキを更新する
 var DECK_1A = 'de1a';		// デッキ：内政スキル使用後画面を強制更新する
 var DECK_1B = 'de1b';		// デッキ：一括ラベルセット機能を追加
@@ -3688,7 +3687,7 @@ function deckControl() {
 		return;
 	}
 
-	// 警護一括デッキセット
+	// 一括デッキセット
 	if (g_beyond_options[DECK_18] == true) {
 		multipleDeckSet();
 	}
@@ -6431,21 +6430,47 @@ function deck_resttime_checker() {
 	);
 
 	// 検索
-	q$("input[id='search_file']").on('click',
-		function(){
-			var target = q$("#search_skill").val().replace(/[ \t　]/g, "");
-			if (target == "") {
-				alert("検索するスキル名を入力してください。");
-				return;
-			}
-			q$("#search_file").val("処理実行中").prop("disabled", true);
+    var isInitialClick = true;
+    var searchSkillInput = q$("#search_skill");
+    var searchFileButton = q$("#search_file");
+        function handleSearch() {
+        var target = searchSkillInput.val().replace(/[ \t　]/g, "");
+        if (target == "") {
+            alert("検索するスキル名を入力してください。");
+            return;
+        }
+        searchFileButton.val("処理実行中").prop("disabled", true);
+        q$("#search-result-div").css({'display':'none'});
+        q$("#search-result").css({'display':'none'});
+        q$("#search-result tr").remove();
+        search_skills(target);
+    }
 
-			q$("#search-result-div").css({'display':'none'});
-			q$("#search-result").css({'display':'none'});
-			q$("#search-result tr").remove();
-			search_skills(target);
-		}
-	);
+    q$("#search_file").on('click', function(event) {
+        if (isInitialClick) {
+            isInitialClick = false;
+            return;
+        }
+        event.preventDefault();
+        handleSearch();
+    });
+
+    searchSkillInput.on('keydown', function(event) {
+        if (event.keyCode === 13) {
+            if (isInitialClick) {
+                isInitialClick = false;
+                return;
+            }
+            event.preventDefault();
+            handleSearch();
+        }
+    });
+
+    q$("#search_skill").on('click', function(event) {
+        if (event.target === searchSkillInput[0]) {
+            isInitialClick = false;
+        }
+    });
 
 	// 閉じる
 	q$("input[id='close_search_file']").on('click',
@@ -6700,8 +6725,15 @@ function deck_resttime_checker() {
 											"<span style='cursor: pointer; color: " + color + ";'>[スキル使用]</span>" +
 											"</td>";
 									} else {
-										tr += "<td class='tpad'>" + result[i].skills[j].skill.rest + "</td>";
-									}
+//										tr += "<td class='tpad'>" + result[i].skills[j].skill.rest + "</td>";
+                                        var recovery_time = result[i].skills[j].skill.rest;
+                                        if (/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(recovery_time)) {
+                                            var remain_time = parseInt((new Date(recovery_time) - new Date())/(1000 * 60));
+                                            tr += "<td class='tpad'>" + recovery_time + "(" + remain_time + "分)" + "</td>";
+                                        } else {
+                                            tr += "<td class='tpad'>" + recovery_time + "</td>";
+                              　          }
+　　                                    }
 								} else {
 									tr += "<td class='tpad'>-</td>" +
 											"<td class='tpad'>-</td>";
@@ -7285,7 +7317,7 @@ console.log("after pushed generals: " + generals[general_ct]);
 									} else if (a.target == 'lowcost') {
 										// 低コストの順
 										if (a.cost != b.cost) {
-											return a.cost > b.cost ? 1 : -1;
+											return a.cost < b.cost ? 1 : -1;
 										}
 									} else {
 										// 軍極系はコストの低い順
