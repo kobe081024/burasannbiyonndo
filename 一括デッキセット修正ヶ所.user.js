@@ -6405,7 +6405,7 @@ function deck_resttime_checker() {
 			"<div class='bold-red'>ファイル内カードスキル・回復時間検索（スキル名、スキル効果、武将カードNo.で検索可能。副将は対象外）</div>" +
 				"<fieldset style='-moz-border-radius:5px; border-radius: 5px; -webkit-border-radius: 5px; margin-bottom: 6px; border: 2px solid black;'>" +
 					"<div style='margin: 3px 3px 3px 3px;'>" +
-						"<span style='font-weight: bold;'>検索条件</span>" +
+						"<span id =style='font-weight: bold;'>検索条件</span>" +
 						"<input type='text' id='search_skill' size=20 style='margin-left:4px; margin-right: 4px; padding: 2px;'>" +
 						"<input type='button' id='search_file' value='検索'>&nbsp;" +
 						"<span id='search_status' style='font-weight: bold;'></span>" +
@@ -6419,7 +6419,7 @@ function deck_resttime_checker() {
 							"<table id='search-result' style='font-size: 8pt; display: none; margin-right: 25px;'>" +
 							"</table>" +
 						"</div>" +
-						"<input type='button' id='close_search_file' style='margin: 4px;' value='閉じる'>&nbsp;" +
+//						"<input type='button' id='close_search_file' style='margin: 4px;' value='閉じる'>&nbsp;" +
 					"</div>" +
 				"</div>" +
 			"</div>" +
@@ -6427,21 +6427,49 @@ function deck_resttime_checker() {
 	);
 
 	// 検索
-	q$("input[id='search_file']").on('click',
-		function(){
-			var target = q$("#search_skill").val().replace(/[ \t　]/g, "");
-			if (target == "") {
-				alert("検索するスキル名を入力してください。");
-				return;
-			}
-			q$("#search_file").val("処理実行中").prop("disabled", true);
+    var isInitialClick = true;
+    var searchSkillInput = q$("#search_skill");
+    var searchFileButton = q$("#search_file");
 
-			q$("#search-result-div").css({'display':'none'});
-			q$("#search-result").css({'display':'none'});
-			q$("#search-result tr").remove();
-			search_skills(target);
-		}
-	);
+    function handleSearch() {
+        var target = searchSkillInput.val().replace(/[ \t　]/g, "");
+        if (target == "") {
+            alert("検索するスキル名を入力してください。");
+            return;
+        }
+        searchFileButton.val("処理実行中").prop("disabled", true);
+
+        q$("#search-result-div").css({'display':'none'});
+        q$("#search-result").css({'display':'none'});
+        q$("#search-result tr").remove();
+        search_skills(target);
+    }
+
+    q$("#search_file").on('click', function(event) {
+        if (isInitialClick) {
+            isInitialClick = false;
+            return;
+        }
+        event.preventDefault();
+        handleSearch();
+    });
+
+    searchSkillInput.on('keydown', function(event) {
+        if (event.keyCode === 13) {
+            if (isInitialClick) {
+                isInitialClick = false;
+                return;
+            }
+            event.preventDefault();
+            handleSearch();
+        }
+    });
+
+    q$("#search_skill").on('click', function(event) {
+        if (event.target === searchSkillInput[0]) {
+            isInitialClick = false;
+        }
+    });
 
 	// 閉じる
 	q$("input[id='close_search_file']").on('click',
@@ -6696,8 +6724,15 @@ function deck_resttime_checker() {
 											"<span style='cursor: pointer; color: " + color + ";'>[スキル使用]</span>" +
 											"</td>";
 									} else {
-										tr += "<td class='tpad'>" + result[i].skills[j].skill.rest + "</td>";
-									}
+//										tr += "<td class='tpad'>" + result[i].skills[j].skill.rest + "</td>";
+                                        var recovery_time = result[i].skills[j].skill.rest;
+                                        if (/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(recovery_time)) {
+                                            var remain_time = parseInt((new Date(recovery_time) - new Date())/(1000 * 60));
+                                            tr += "<td class='tpad'>" + recovery_time + "(" + remain_time + "分)" + "</td>";
+                                        } else {
+                                            tr += "<td class='tpad'>" + recovery_time + "</td>";
+                                        }
+                                    }
 								} else {
 									tr += "<td class='tpad'>-</td>" +
 											"<td class='tpad'>-</td>";
