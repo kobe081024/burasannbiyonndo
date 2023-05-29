@@ -6573,12 +6573,11 @@ function deck_resttime_checker() {
 							var info2 = q$("div[class='kaifuku_cnt']", cards.eq(i));
 							var skills = [];
 							for (var j = 2; j < info2.length || j <= 5; j++) {
-                                // 副将スキルは外す (2023/05.26 by ぷらじ)
+                                // 副将スキルは外す (2023/05/26 by ぷらじ)
 //                                var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "").replace(/^.*:/, "");
                                 var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "");
                                 if (skill.match(/^副/) != null) continue;
                                 skill = skill.replace(/^.*:/, "");
-
 								var rest = q$("p", info2).eq(j).text().replace(/[\t]/g, "");
 								skills.push({name: skill, rest: rest});
 							}
@@ -7134,12 +7133,11 @@ function multipleDeckSet() {
 			var select_target = q$("#multiple_set_mode option:selected").val();
 
 			// 選択した設定先拠点
-			var select_village = q$("#multiple_set_village option:selected").val();
-
+			var selected = q$("#multiple_set_village option:selected");
+			var select_village = selected.val();
+            var village_kind = selected.index() === 0 ? 1: 2;
             // 選択したデッキ
             var select_mode = q$("input[name='deck_mode']").val();
-
-console.log("select_mode: " + select_mode);
 
             // ラベル取得
 			var label = 0;
@@ -7161,9 +7159,7 @@ console.log("select_mode: " + select_mode);
             }
 
             var target_url = BASE_URL + '/card/deck.php?deck_mode=' + select_mode+ url_params;
-console.log("target_url: " + target_url);
             history.pushState({}, "", target_url);
-//          location.reload();
 
             var max_page = 1;
             var freecost;
@@ -7178,12 +7174,10 @@ console.log("target_url: " + target_url);
             .done(function(res) {
 //                var resp = q$("<div>").append(res);
                 // コスト抽出
-//console.log(q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='" + select_mode + "']").text());
-var temp = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='1']");
-console.log("Query: " + temp.html() + " length: " + temp.length);
-//                var match = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='" + select_mode + "']").text().match(/\d+(\.\d+)?/g);
-                // なぜか data-deck-kind=1 を含むタグの一個目が通常デッキ、2個目が警護デッキのコスト
-                var match = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='1']").eq(select_mode - 1).text().match(/\d+(\.\d+)?/g);
+
+                // タグの一個目が通常デッキ、2個目が警護デッキのコスト
+//                var match = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='1']").eq(select_mode - 1).text().match(/\d+(\.\d+)?/g);
+                var match = q$("div[class='deck-all-tab-element clearfix'] div[class='number clearfix'] span[class='volume'][data-deck-kind='" + village_kind + "']").eq(select_mode - 1).text().match(/\d+(\.\d+)?/g);
 console.log("match: " + match + " length: " + match.length);
 console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
                 freecost = parseFloat(match[1]) - parseFloat(match[0]);
@@ -7487,7 +7481,7 @@ function addDropDeckCard() {
 				base.children('span').on(
 					'click', function() {
 						var match = q$(this).attr('id').match(/_([0-9].*)/);
-						card_id = match[1];
+						var card_id = match[1];
 
 						// 状態更新
 						var elem = q$(this);
