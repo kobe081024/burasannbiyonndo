@@ -1,30 +1,23 @@
 // ==UserScript==
-// @name		bro3_Auto_Bilder
-// @namespace	http://at-n2.net/
-// @description	ブラウザ三国志 自動建築スクリプト By nottisan + 5zen（自動内政改良） + RAPT
-// @icon		https://raw.github.com/5zen/fake3gokushi/master/icon.png
+// @name		bro3_beyond
+// @namespace	bro3_beyond
 // @include		https://*.3gokushi.jp/*
 // @include		http://*.3gokushi.jp/*
-// @require		http://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js
-// @require		https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
-// @exclude		https://*.3gokushi.jp/world/select_server_mixi_new.php*
-// @exclude		http://*.3gokushi.jp/world/select_server_mixi_new.php*
-// @exclude		https://*.3gokushi.jp/maintenance*
-// @exclude		http://*.3gokushi.jp/maintenance*
-// @exclude		https://info.3gokushi.jp/*
-// @exclude		http://info.3gokushi.jp/*
-// @connect		3gokushi.jp
-// @grant		GM_getValue
-// @grant		GM_setValue
-// @grant		GM_xmlhttpRequest
-// @grant		GM_log
-// @grant		GM.getValue
-// @grant		GM.setValue
-// @grant		GM.xmlhttpRequest
-// @grant		GM.log
-// @author		RAPT
-// @version		2022.02.24
-// ==/UserScript==
+// @description	ブラウザ三国志beyondリメイク by Craford 氏 with RAPT
+// @version		1.09.27.1coach
+// @updateURL	http://craford.sweet.coocan.jp/content/tool/beyond/bro3_beyond.user.js
+
+// @grant	GM_addStyle
+// @grant	GM_deleteValue
+// @grant	GM_getValue
+// @grant	GM_listValues
+// @grant	GM_log
+// @grant	GM_setValue
+// @grant	GM_xmlhttpRequest
+// @grant	GM_getResourceText
+// @require	https://code.jquery.com/jquery-2.1.4.min.js
+// @require	https://code.jquery.com/ui/1.11.4/jquery-ui.min.js
+// @resource	jqueryui_css	http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css
 
 // 配布サイト
 // https://github.com/RAPT21/bro3-tools/
