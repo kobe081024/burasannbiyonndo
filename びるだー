@@ -1,0 +1,161 @@
+
+Tampermonkey® by Jan Biniok
+v4.19.0
+	
+bro3_Auto_Bilder
+by RAPT
+1
+// ==UserScript==
+2
+// @name        bro3_Auto_Bilder
+3
+// @namespace   http://at-n2.net/
+4
+// @description ブラウザ三国志 自動建築スクリプト By nottisan + 5zen（自動内政改良） + RAPT
+5
+// @icon        https://raw.github.com/5zen/fake3gokushi/master/icon.png
+6
+// @include     https://*.3gokushi.jp/*
+7
+// @include     http://*.3gokushi.jp/*
+8
+// @require     http://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js
+9
+// @require     https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
+10
+// @exclude     https://*.3gokushi.jp/world/select_server_mixi_new.php*
+11
+// @exclude     http://*.3gokushi.jp/world/select_server_mixi_new.php*
+12
+// @exclude     https://*.3gokushi.jp/maintenance*
+13
+// @exclude     http://*.3gokushi.jp/maintenance*
+14
+// @exclude     https://info.3gokushi.jp/*
+15
+// @exclude     http://info.3gokushi.jp/*
+16
+// @connect     3gokushi.jp
+17
+// @grant       GM_getValue
+18
+// @grant       GM_setValue
+19
+// @grant       GM_xmlhttpRequest
+20
+// @grant       GM_log
+21
+// @grant       GM.getValue
+22
+// @grant       GM.setValue
+23
+// @grant       GM.xmlhttpRequest
+24
+// @grant       GM.log
+25
+// @author      RAPT
+26
+// @version     2022.02.24
+27
+// ==/UserScript==
+28
+​
+29
+// 配布サイト
+30
+// https://github.com/RAPT21/bro3-tools/
+31
+​
+32
+// ※施設建設、施設LVUP、施設削除などは、運営側仕様として、拠点を指定しての処理ができません。
+33
+// 現在表示している拠点に対して、座標のみの指定しかできません。
+34
+// そのため、指示を送ろうとしている最中に拠点を切り替えられてしまうと意図しない拠点で発動してしまいます。
+35
+// 自動巡回時間を短くし過ぎていたり、指示発動タイミングで拠点を切り替えたりしないようにすることで回避できる可能性があります。
+36
+// 手動操作を優先したい場合、一度スクリプトを停止させておくことをご検討ください。
+37
+​
+38
+// ※施設LVUPは、運営側仕様としては、LV値を指定しての建築はできません。
+39
+// 現在表示している拠点に対して、座標のみを指定してLVUPの指示をするだけです。
+40
+// そのため、ブラウザの動作が重い場合などに、上限指定値を超えて指示が発行される場合がありますので、ご注意ください。
+41
+​
+42
+// ----- 動作環境について ----- 2017.05.28
+43
+// Fifefox 56以下 + Greasemonkey 3.x で開発しています。
+44
+// Google Chrome + Tampermonkey でも動作することを確認しています。
+45
+// Pale Moon など上記以外の環境でも動作するらしいですが動作保証外です。
+46
+​
+47
+// ----- 更新履歴
+48
+// 2014.08.20 (本スクリプトのベース)
+49
+// 2015.05.10 施設削除予約対応 by RAPT
+50
+// 2015.05.13 施設削除予約対応が Google Chrome でも動作するよう修正
+51
+//            自動内政スキルに豊潤祈祷を追加 by RAPT
+52
+// 2015.05.24 ★9(1-1-1-2)水車村化オプションを追加
+53
+//            変換用市場表示が Google Chrome でも動作するよう修正
+54
+//            Google Chrome 対応版@2015.01.01 をマージ by RAPT
+55
+// 2015.05.27 ★5(0-0-0-1)水車村オプションを追加
+56
+//            ★5工場村オプションを追加
+57
+// 2015.05.30 ★7(0-0-0-1)水車村オプションを追加
+58
+//            ★5工場村の建築位置を調整
+59
+// 2015.06.09 設定画面に「保存して閉じる」ボタンを追加。保存アラートなし、保存後閉じる、閉じた後リロードしない。
+60
+// 2015.06.09 メンテナンスでエラーが出るようになったのを修正
+61
+// 2015.06.10 メンテナンスでinfoフレームに表示される問題を修正
+62
+// 2015.06.11 メンテナンスでinfoフレームに表示される問題を修正→うまく動いていないようなのでいったん戻した
+63
+// 2015.07.24 水車村化のロジック変更。先に畑をすべて建設し、各LV10まで上げてから水車に必要な施設を作るようにした
+64
+// 2015.07.27 水車村化のロジック変更。先に畑をすべて建設し、水車に必要な施設を建設後、自動LVUPにシフトするようにした
+65
+//            この変更に伴い、自動水車村化オプションのチェックを入れ直してください
+66
+//            ★3(0-0-0-1)水車村オプションを追加
+67
+// 2015.07.28 初期化ボタン以外で水車村化オプションのチェックを外せなくなっていた問題を修正
+68
+//            2015.07.27版で工場村化オプションが動作していなかった問題を修正
+69
+// 2015.10.02 水車村化オプションで資源不足時無限ループしていた問題を修正
+70
+// 2015.11.29 宿舎ビルド＆スクラップ機能を削除
+71
+//            糧村化オプションにて銅雀台を建設しないようにした
+72
+//            保存ボタン押下でアラート表示しないようにした
+73
+//            運営のタイマーバグ対策。最大時間を異常に超えている場合、リロードする。
+74
+// 2015.11.29r2 必要資源チェックの誤りを修正
+75
+// 2015.12.01 運営のタイマーバグ対策でタイマー情報が未登録のとき無限リロードしていた不具合を修正。
+Tam - Your service bot
+
+Do you need help finding Tampermonkey's console output?
+無効にする
+Tampermonkey Bot
