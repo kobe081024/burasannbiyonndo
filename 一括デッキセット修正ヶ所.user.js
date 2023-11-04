@@ -4,7 +4,7 @@
 // @include		https://*.3gokushi.jp/*
 // @include		http://*.3gokushi.jp/*
 // @description	ブラウザ三国志beyondリメイク by Craford 氏 with RAPT
-// @version		1.09.27
+// @version		1.09.32coach
 // @updateURL	http://craford.sweet.coocan.jp/content/tool/beyond/bro3_beyond.user.js
 
 // @grant	GM_addStyle
@@ -119,12 +119,17 @@
 //						- 自動スキルLVUP、カード検索、内政スキル使用など、スキル系の機能について、SLカードやL覇など5スキル対応カードでも動作するように
 // 1.09.26	2023/04/29	RAPT. 2023/04/27のメンテナンス以降において、デッキ画面の仕様変更により、デッキ系の機能が動作しなくなっていたのを修正
 // 1.09.27	2023/04/29	RAPT. メニューに北伐関係の項目を追加
+// 1.09.28	2023/05/30	RAPT. 「デッキ：ファイルに下げるボタンを1クリックで使用に変更」が警護デッキで動作していなかった不具合を修正
+// 1.09.29	2023/06/04	RAPT. 回復時間検索、「デッキ：一括デッキセット機能を追加」の不具合修正 by @pla2999 in #38
+// 1.09.30	2023/06/27	RAPT. 「領地一覧：領地LVUP時のアラートを抑制」を追加
+//						- 「同盟トップ：同盟員全領地座標CSV取得」機能が動作しなくなっていたのを修正
+//						- 「同盟トップ：同盟員本拠座標取得」機能が動作しなくなっていたのを修正
+// 1.09.31	2023/07/25	RAPT. 「共通：地形1.0」を追加
+//						- メニューの一部を地形1.0対応
+//						- 地形1.0マップで「Profile：NPC隣接同盟探索」が動作するよう暫定対処
+// 1.09.32	2023/07/27	RAPT. 1.09.29で同盟ログ検索、一括ラベルセットが動かなくなっていた不具合を修正
 
 
-// TODO:
-// 内政ボタン/内政スキルで、すでにその拠点に内政官がいる場合、置き換えるかの確認。「呉の治世」スキル発動中です。内政官を置き換えますか？　はい「いいえ」
-
-// ローカル開発なので、uploadする前に正規バージョンにすること
 //----------------------------------------------------------------------
 // ロケーションが info.3gokushi.jp の場合はなにもしない
 //----------------------------------------------------------------------
@@ -218,9 +223,7 @@ var BASE_URL = SERVER_SCHEME + location.hostname;
 var SERVER_NAME = location.hostname.match(/^(.*)\.3gokushi/)[1];
 var SORT_UP_ICON = BASE_URL + "/20160427-03/extend_project/w945/img/trade/icon_up.gif";
 var SORT_DOWN_ICON = BASE_URL + "/20160427-03/extend_project/w945/img/trade/icon_down.gif";
-//var AJAX_REQUEST_INTERVAL = 200;   // (ms)
 var AJAX_REQUEST_INTERVAL = 100; // (ms)
-
 //----------------------------------------------------------------------
 // 画面設定項目-保存フィールド名対応定数群
 //----------------------------------------------------------------------
@@ -228,6 +231,7 @@ var AJAX_REQUEST_INTERVAL = 100; // (ms)
 var COMMON_01 = 'co01';		// 資源タイマー
 var COMMON_02 = 'co02';		// プルダウンメニューを差し替える
 var COMMON_03 = 'co03';		// 天気予告常時表示
+var COMMON_04 = 'co04';		// 地形1.0
 
 // プロフィールタブ
 var PROFILE_01 = 'pr01';	// ランキングリンク追加
@@ -265,7 +269,7 @@ var DECK_02 = 'de02';		// 共通：トレードへのリンクを追加
 var DECK_03 = 'de03';		// 共通：ページ切り替えのプルダウンを追加
 var DECK_11 = 'de11';		// デッキ：ファイル内スキル検索機能の追加
 var DECK_12 = 'de12';		// デッキ：スキル補正効果表示機能の追加
-var DECK_13 = 'de13';		// デッキ：内政スキル使用リンクの追加（回復：赤/緑、内政：青）
+var DECK_13 = 'de13';		// デッキ：内政スキル使用リンクの追加（回復：赤、内政：青）
 var DECK_14 = 'de14';		// デッキ：1クリックデッキセットボタン追加
 var DECK_15 = 'de15';		// デッキ：ファイルに下げるボタンを1クリックで使用に変更
 var DECK_16 = 'de16';		// デッキ：内政官を1クリックでファイルに下げるボタンを追加
@@ -278,6 +282,7 @@ var DECK_1C = 'de1c';		// デッキ：現在の所持枚数をファイルの上
 var DECK_1D = 'de1d';		// デッキ：援軍武将を1クリックで撤退させるボタンを追加
 var DECK_21 = 'de21';		// 領地一覧：領地一覧のソートに取得順を追加
 var DECK_22 = 'de22';		// 領地一覧：「新領地」で始まる領地を全て破棄
+var DECK_23 = 'de23';		// 領地一覧：領地LVUP時のアラートを抑制
 var DECK_31 = 'de31';		// 修行合成でレベルが上がった時に、レベルアップボタンを追加
 var DECK_32 = 'de32';		// 自動スキルレベルアップ合成機能を追加
 var DECK_33 = 'de33';		// スキルレベルアップ合成画面でベースカードの交換機能を追加
@@ -544,10 +549,10 @@ function addGlobalStyles() {
 			text-decolation: underline; \
 			color: red; \
 		} \
-		.skg { \
+          .skg { \
 			cursor: pointer; \
 			text-decolation: underline; \
-			color: mediumspringgreen; \
+			color: orange; \
 		} \
 		.skb:hover { \
 			font-weight: bold; \
@@ -555,7 +560,7 @@ function addGlobalStyles() {
 		.skr:hover { \
 			font-weight: bold; \
 		} \
-		.skg:hover { \
+         .skg:hover { \
 			font-weight: bold; \
 		} \
 		.m4l { \
@@ -1470,8 +1475,7 @@ function profileControl() {
 					//-------------
 					// NPC隣接探索
 					//-------------
-					if (q$("#search_event_npc").prop('checked') == false) {
-						// search_pattern = new RegExp("rewrite\\('(.*)', '(.*)', '.*', '(.*)', '(.*)', '([★]*)', '.*', '.*', '.*', '.*', '.*', '.*', '.*'\\); overOpe");
+					if (q$("#search_event_npc").prop('checked') == false) {// 削除中、(地名)、(君主名)、人口、(座標)、(同盟名)、(戦力)、距離、森岩鉄糧、NPCフラグ、保護期間、深夜停戦
 						search_pattern = new RegExp("rewriteAddRemoving\\('.*','(.*)', '(.*)', '.*', '(.*)', '(.*)', '([★]*)', '.*', '.*', '.*', '.*', '.*', '.*', '.*', .*\\); overOpe");
 					} else {
 						search_pattern = new RegExp("rewritePF\\(.*,'(.*)', '(.*)', '.*', '(.*)', '(.*)', '([★]*) '.*', '.*', '.*', '.*', '.*', '.*', '.*'\\); overOpe");
@@ -1503,7 +1507,11 @@ function profileControl() {
 					var result_box = q$("#result_npc_box");
 
 					var list = new Array();
-					list.push("NPC名\tX座標\tY座標\t★\t所有同盟\t北西\t北\t北東\t西\t東\t南西\t南\t南東");
+					if (g_beyond_options[COMMON_04]) {
+						list.push("NPC名\tX座標\tY座標\t★\t所有盟主\t北西\t北\t北東\t西\t東\t南西\t南\t南東");
+					} else {
+						list.push("NPC名\tX座標\tY座標\t★\t所有同盟\t北西\t北\t北東\t西\t東\t南西\t南\t南東");
+					}
 					var listcnt = 0;
 					var count = 1;
 					var max = search_target.length;
@@ -1526,9 +1534,11 @@ function profileControl() {
 
 						wait = true;
 
-						var loc = {'x':search_target[count-1].x, 'y':search_target[count-1].y, 'type':1};
-						q$.ajax({
-							url: BASE_URL + '/map.php',
+						var map_type = g_beyond_options[COMMON_04] ? 4 : 1;
+						var map_path = g_beyond_options[COMMON_04] ? '/big_map.php' : '/map.php';
+						var loc = {'x':search_target[count-1].x, 'y':search_target[count-1].y, 'type':map_type};
+                        q$.ajax({
+							url: BASE_URL + map_path,
 							type: 'GET',
 							datatype: 'html',
 							cache: false,
@@ -1536,32 +1546,108 @@ function profileControl() {
 						})
 						.done(function(res) {
 							var resp = q$("<div>").append(res);
-							var area = q$("#mapOverlayMap area", resp);
+							var area = g_beyond_options[COMMON_04] ? q$("#map51-content.map-v2 li a[onmouseover]", resp) : q$("#mapOverlayMap area[onmouseover]", resp);
 
 							// NPC隣接調査
-							var check = [60, 48, 59, 70, 49, 71, 50, 61, 72];
+							function checkMapCellList() {
+								var map_size = g_beyond_options[COMMON_04] ? 51 : 11;
+								// 配列の順は 対象NPC砦、北西、北、北東、西、東、南西、南、南東
+								var idx_center = (map_size + 1) * ((map_size - 1) / 2);
+								var list = [idx_center];
+								if (map_size === 11) {
+									// 斜めMAPの場合、最西から北→南で並ぶ; center = 60
+									list.push(idx_center - map_size - 1);
+									list.push(idx_center - 1);
+									list.push(idx_center + map_size - 1);
+									list.push(idx_center - map_size);
+									list.push(idx_center + map_size);
+									list.push(idx_center - map_size + 1);
+									list.push(idx_center + 1);
+									list.push(idx_center + map_size + 1);
+								} else if (map_size === 51) {
+									// 51MAPの場合、最北から西→東で並ぶ; center = 1300
+									list.push(idx_center - map_size - 1);
+									list.push(idx_center - map_size);
+									list.push(idx_center - map_size + 1);
+									list.push(idx_center - 1);
+									list.push(idx_center + 1);
+									list.push(idx_center + map_size - 1);
+									list.push(idx_center + map_size);
+									list.push(idx_center + map_size + 1);
+								} else {
+									console.log("不明なMAPです。");
+								}
+								return list;
+							}
+
+							var check = checkMapCellList();
 							var tsv = "";
 							var neighbor = "";
 							for (var i = 0; i < check.length; i++) {
 								// 一致検索
-								var match = q$(area[check[i]]).attr("onmouseover").match(search_pattern);
-								if (match == null) {
-									continue;
-								}
-								if (match[4] == '') {
-									match[4] = '-';
-								}
-
-								if (i == 0) {
-									// NPC名、座標、★数、所有同盟
-									var pos = match[3].match(/([-]*\d+),([-]*\d+)/);
-									tsv += match[1] + "\t" + parseInt(pos[1]) + "\t" + parseInt(pos[2]) + "\t★" + match[5].length + "\t" + match[4];
-								} else {
-									// 隣接（北西、北、北東、西、東、南西、南、南東の順）。所持同盟がいない場合'-'
-									if (match[4] != '-') {
-										tsv += match[4];
+								var attr_onmouseover = q$(area[check[i]]).attr("onmouseover");
+								if (g_beyond_options[COMMON_04]) {
+									var axis = attr_onmouseover.match(new RegExp('距離</dt><dd>\\(([-]?\\d+),([-]?\\d+)\\)'));
+									if (axis == null) {
+										continue;
+									}
+									// NPC砦では同盟名が取得できないので取得できなくてもエラーにしない
+									var ally_name = attr_onmouseover.match(new RegExp('<dt>同盟名</dt><dd>(.*?)</dd>'));
+									ally_name = (ally_name == null) ? '-' : ally_name[1];
+									if (i == 0) {
+										var npc_name = attr_onmouseover.match(new RegExp('<dt class=\"bigmap-caption\">(.*?)</dt>'));
+										if (npc_name == null) {
+											continue;
+										} else {
+											npc_name = npc_name[1];
+										}
+										var owner_name = attr_onmouseover.match(new RegExp('<dt>君主名</dt><dd>(.*?)</dd>'));
+										if (owner_name == null) {
+											continue;
+										} else {
+											owner_name = owner_name[1];
+										}
+										var star = attr_onmouseover.match(new RegExp('<span class="npc-red-star">([★]+).*?</span>'));
+										if (star == null) {
+											continue;
+										} else {
+											star = star[1].length;
+										}
+										// NPC砦名と守衛名が一致する場合は未攻略砦とし、所有君主名'-'
+										var ma = npc_name.match(/^(.*?)砦(\d+)$/);
+										var mo = owner_name.match(/^(.*?)守衛(\d+)$/);
+										if (ma != null && mo != null && ma[1] == mo[1] && ma[2] == mo[2]) {
+											owner_name = '-';
+										}
+										tsv += npc_name + "\t" + parseInt(axis[1]) + "\t" + parseInt(axis[2]) + "\t★" + star + "\t" + owner_name;
 									} else {
-										tsv += "-";
+										// 隣接（北西、北、北東、西、東、南西、南、南東の順）。所持同盟がいない場合'-'
+										if (ally_name != '-') {
+											tsv += ally_name;
+										} else {
+											tsv += "-";
+										}
+									}
+								} else {
+									var match = attr_onmouseover.match(search_pattern);
+									if (match == null) {
+										continue;
+									}
+									if (match[4] == '') {
+										match[4] = '-';
+									}
+
+									if (i == 0) {
+										// NPC名、座標、★数、所有同盟
+										var pos = match[3].match(/([-]*\d+),([-]*\d+)/);
+										tsv += match[1] + "\t" + parseInt(pos[1]) + "\t" + parseInt(pos[2]) + "\t★" + match[5].length + "\t" + match[4];
+									} else {
+										// 隣接（北西、北、北東、西、東、南西、南、南東の順）。所持同盟がいない場合'-'
+										if (match[4] != '-') {
+											tsv += match[4];
+										} else {
+											tsv += "-";
+										}
 									}
 								}
 								if (i != 8) {
@@ -1590,7 +1676,7 @@ function profileControl() {
 							wait = false;
 						});
 					};
-					npc_timer = setInterval(neighbor_search_func, 150);
+					npc_timer = setInterval(neighbor_search_func, 1000);
 				}
 			}
 		);
@@ -1706,7 +1792,7 @@ function mapTabControl() {
 				if (all1 !== null || all2 !== null) {
 					hasWAll = true;
 				}
-				all = generalEnts.eq(i).html().match(/(鹵獲|大徳|劫略|攻奪|収奪|趁火打劫|桃賊の襲撃)/);
+		   		 all = generalEnts.eq(i).html().match(/(鹵獲|大徳|劫略|攻奪|収奪|趁火打劫|桃賊の襲撃)/);
 				var hasPrize = false;
 				if (all != null) {
 					hasPrize = true;
@@ -1778,7 +1864,7 @@ function mapTabControl() {
 					"<div>" +
 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='checkoff_all' type='button' value='選択解除'>" +
 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_all' type='button' value='全選択'>" +
-						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_gauge_100' type='button' value='討伐100以上を選択'>" +
+ 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_gauge_100' type='button' value='討伐100以下を選択'>" +
 						"<input style='margin-bottom: 4px;' id='check_gauge_max' type='button' value='討伐500を選択'>" +
 					"</div>" +
 					"<div>" +
@@ -1794,12 +1880,12 @@ function mapTabControl() {
 					"<div style='margin-bottom: 4px;'>" +
 						"<input type='checkbox' id='use_prize' style='vertical-align: middle'>" +
 							"<label style='margin-left: 4px; margin-right: 4px;' for='use_prize'>" +
-								"鹵獲として出兵" +
+								"通常出兵" +
 							"</label>" +
 						"</input>" +
 					"</div>" +
 					"<div style='margin-bottom: 4px;'>" +
-						"<input style='margin-right: 4px; margin-top: 8px;' id='exec_multiple_troop' type='button' value='出兵する'>" +
+						"<input style='margin-right: 4px; margin-top: 8px;' id='exec_multiple_troop' type='button' value='鹵獲'>" +
 						"<input id='close_multiple_troop' type='button' value='閉じる'>" +
 					"</div>" +
 				"</div>" +
@@ -1872,28 +1958,31 @@ function mapTabControl() {
 				}
 			);
 
-			// 討伐100以上選択
-			q$("#check_gauge_100").on('click',
-				function() {
-					var ents = q$("input[id*='g_troop']");
-					for (var i = 0; i < ents.length; i++) {
-						if (ents.eq(i).attr('gauge') < 100) {
-							continue;
-						}
-						ents.eq(i).prop('checked', true);
-					}
-				}
-			);
+
+			// 討伐100以下を選択
+ 			q$("#check_gauge_100").on('click',
+ 				function() {
+ 					var ents = q$("input[id*='g_troop']");
+ 					for (var i = 0; i < ents.length; i++) {
+						if (ents.eq(i).attr('gauge') > 100) {
+ 							continue;
+ 						}
+ 						ents.eq(i).prop('checked', true);
+ 					}
+ 				}
+ 			);
+
 
 			// 討伐500選択
 			q$("#check_gauge_max").on('click',
-				function() {
-					var ents = q$("input[id*='g_troop']");
-					for (var i = 0; i < ents.length; i++) {
+ 				function() {
+ 					var ents = q$("input[id*='g_troop']");
+ 					for (var i = 0; i < ents.length; i++) {
+
 						if (ents.eq(i).attr('gauge') == 500) {
 							ents.eq(i).prop('checked', true);
 						} else {
-							ents.eq(i).prop('checked', false);
+ 							ents.eq(i).prop('checked', false);
 						}
 					}
 				}
@@ -1950,9 +2039,9 @@ function mapTabControl() {
 					postdata['village_x_value'] = parseInt(troop_x);
 					postdata['village_y_value'] = parseInt(troop_y);
 					if (q$("#use_prize").prop('checked') == true) {
-						postdata['radio_move_type'] = 307;		// 鹵獲
+						postdata['radio_move_type'] = 302;		// 鹵獲
 					} else {
-						postdata['radio_move_type'] = 302;		// 通常出兵
+						postdata['radio_move_type'] = 307;		// 通常出兵
 					}
 					postdata['show_beat_bandit_flg'] = 1;
 					postdata['radio_reserve_type'] = 0;
@@ -2293,7 +2382,7 @@ function allianceTabControl() {
 								})
 								.done(function(res){
 									var resp = q$("<div>").append(res);
-									var landelems = q$("#gray02Wrapper table[class='commonTables'] tr", resp);
+									var landelems = q$("#gray02Wrapper .profileTable tr", resp);
 									var rowct = 0;
 									for (var n = 0; n < landelems.length; n++) {
 										if (landelems.eq(n).children('th').eq(0).text() == '名前') {
@@ -2425,7 +2514,7 @@ function allianceTabControl() {
 								.done(function(res){
 									var resp = q$("<div>").append(res);
 									var result = "";
-									var landelems = q$("#gray02Wrapper table[class='commonTables'] tr", resp);
+									var landelems = q$("#gray02Wrapper .profileTable tr", resp);
 									var rowct = 0;
 									for (var n = 0; n < landelems.length; n++) {
 										if (landelems.eq(n).children('th').eq(0).text() == '名前') {
@@ -2631,7 +2720,7 @@ function allianceTabControl() {
 								}
 								wait = false;
 							});
-						}, AJAX_REQUEAT_INTERVAL
+				}, AJAX_REQUEST_INTERVAL
 					);
 				}
 			);
@@ -3885,6 +3974,8 @@ function execCommonPart() {
 
 		var loc = q$("li.gnavi02 a").attr('href');
 		var bigloc = loc.replace('/map.php?', '/big_map.php?');
+		var eleloc = loc.replace('/map.php?', '/elevation_map.php?');
+		var _3dloc = loc.replace('/map.php?', '/3d_map.php?');
 
 		var cur_x = 0;
 		var cur_y = 0;
@@ -3893,6 +3984,51 @@ function execCommonPart() {
 			cur_x = match[1];
 			cur_y = match[2];
 		}
+
+		var mapmenu;
+		if (g_beyond_options[COMMON_04]) {
+			mapmenu = [
+				['21x21', eleloc + '&map_size=21'], ['41x41', eleloc + '&map_size=41'], ['3D', _3dloc], ['旧51x51', bigloc + '&type=4'],
+			];
+		} else {
+			mapmenu = [
+				['11x11', loc + '&type=1'], ['21x21', loc + '&type=5'], ['51x51', loc + '&type=4'], ['スクロール21x21', bigloc + '&type=6&ssize=21'], ['スクロール51x51', bigloc + '&type=6&ssize=51'],
+			];
+		}
+
+		var allymenu;
+		if (g_beyond_options[COMMON_04]) {
+			allymenu = [
+				['連結状況', alurl + '/rampart_tower_group.php'],
+				['友軍状況', alurl + '/friendly_army.php'],
+				['遷都状況', alurl + '/castle_transfer.php'],
+				['同盟ログ', alurl + '/alliance_log.php',
+					[
+						['全て', alogurl], ['攻撃', alogurl + '?m=attack'], ['防御', alogurl + '?m=defense'], ['偵察', alogurl + '?m=scout'],
+						['破壊', alogurl + '?m=fall'], ['援軍', alogurl + '?m=reinforcement'], ['友軍', alogurl + '?m=friendly_army'], ['同盟', alogurl + '?m=alliance'],
+					],
+				],
+				['ランキング', alurl + '/ranking.php'], ['勢力リスト', alurl + '/dependency.php'], ['同盟掲示板', BASE_URL + '/bbs/topic_view.php'],
+				['同盟スキル', alurl + '/alliance_skill.php'],
+				['管理', alurl + '/manage.php'],
+				['配下同盟管理', alurl + '/manage_dep.php'],
+			];
+		} else {
+			allymenu = [
+				['友軍状況', alurl + '/friendly_army.php'],
+				['同盟ログ', alurl + '/alliance_log.php',
+					[
+						['全て', alogurl], ['攻撃', alogurl + '?m=attack'], ['防御', alogurl + '?m=defense'], ['偵察', alogurl + '?m=scout'],
+						['破壊', alogurl + '?m=fall'], ['援軍', alogurl + '?m=reinforcement'], ['友軍', alogurl + '?m=friendly_army'], ['同盟', alogurl + '?m=alliance'],
+					],
+				],
+				['ランキング', alurl + '/ranking.php'], ['勢力リスト', alurl + '/dependency.php'], ['同盟掲示板', BASE_URL + '/bbs/topic_view.php'],
+				['同盟スキル', alurl + '/alliance_skill.php'],
+				['管理', alurl + '/manage.php'],
+				['配下同盟管理', alurl + '/manage_dep.php'],
+			];
+		}
+
 
 		var menus = [
 			// 都市
@@ -3925,23 +4061,9 @@ function execCommonPart() {
 				],
 			],
 			// 全体地図
-			[
-				['11x11', loc + '&type=1'], ['21x21', loc + '&type=5'], ['51x51', loc + '&type=4'], ['スクロール21x21', bigloc + '&type=6&ssize=21'], ['スクロール51x51', bigloc + '&type=6&ssize=51'],
-			],
+			mapmenu,
 			// 同盟
-			[
-				['友軍状況', alurl + '/friendly_army.php'],
-				['同盟ログ', BASE_URL + '/alliance/alliance_log.php',
-					[
-						['全て', alogurl], ['攻撃', alogurl + '?m=attack'], ['防御', alogurl + '?m=defense'], ['偵察', alogurl + '?m=scout'],
-						['破壊', alogurl + '?m=fall'], ['援軍', alogurl + '?m=reinforcement'], ['友軍', alogurl + '?m=friendly_army'], ['同盟', alogurl + '?m=alliance'],
-					],
-				],
-				['ランキング', alurl + '/ranking.php'], ['勢力リスト', alurl + '/dependency.php'], ['同盟掲示板', BASE_URL + '/bbs/topic_view.php'],
-				['同盟スキル', alurl + '/alliance_skill.php'],
-				['管理', alurl + '/manage.php'],
-				['配下同盟管理', alurl + '/manage_dep.php'],
-			],
+			allymenu,
 			// デッキ
 			[
 				['城トップ', facurl + '/castle.php'],
@@ -3997,13 +4119,14 @@ function execCommonPart() {
 								['忠誠心上限アップ', BASE_URL + '/council/arms.php?council_function_id=204'],
 								['強化忠誠心攻撃', BASE_URL + '/council/arms.php?council_function_id=205'],
 								['軍費貯蓄拡大', BASE_URL + '/council/arms.php?council_function_id=206'],
+        						['城壁塔', BASE_URL + '/council/?tab=7'], // 地形1.0マップのみだが階層が深いのでこのままにしておく
 								['名声獲得', BASE_URL + '/council/arms.php?council_function_id=207'],
 							],
 						],
 						['農村', BASE_URL + '/council/?tab=3'],
 						['設計', BASE_URL + '/council/?tab=4'],
+   						['北伐', BASE_URL + '/council/?tab=6'],
 						['南蛮', BASE_URL + '/council/?tab=5'],
-						['北伐', BASE_URL + '/council/?tab=6'],
 					],
 				],
 				['合成', BASE_URL + '/union/index.php',
@@ -4023,8 +4146,14 @@ function execCommonPart() {
 					[
 						['ファイル', BASE_URL + '/card/card_stock_file.php'],
 						['ストック', BASE_URL + '/card/card_stock.php'],
+                         ['R貂蝉', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=1&search_configs%5Bq%5D=素材&l=&p='],
+                     ['SR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=40&l=&p='],
+                    ['UR', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=50&l=&p='],
+                       ['L', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=60&l=&p='],
+                        ['SL', BASE_URL + '/card/card_stock.php?search_configs%5Btype%5D=0&search_configs%5Bq%5D=&card_filter%5B1%5D%5B%5D=70&l=&p='],
 					],
 				],
+                ['一括破棄BP+入手', BASE_URL + '/card/allcard_delete.php?card_filter%5B9%5D%5B%5D=1&s=rarity&o=a'],
 				['トレード検索', '',
 					[
 						['スキル別', '',
@@ -4642,6 +4771,10 @@ function execFacilityPart() {
 			}
 		);
 	}
+
+	if (g_beyond_options[DECK_23] == true) {
+		q$("#all .commonTables td a").prop("onclick", null).off("click");
+	}
 }
 
 //--------------------//
@@ -5110,11 +5243,7 @@ function execUnionPart() {
 									}
 
 									// 2つ目のスキルを保持するカードは無視する
-									var second_skill = q$("div[class*='right'] table[class^='statusParameter2'] tbody tr", cards[i]).eq(3).children('td').text();
-									second_skill = second_skill.replace(/[ \t]/g, "");
-									if (second_skill != "") {
-										continue;
-									}
+									
 
 									// 素材IDを取得
 									var match = q$("div[id*='cardWindow_']", cards[i]).attr('id').match(/cardWindow_([0-9].*)/);
@@ -6002,6 +6131,7 @@ function draw_setting_window(append_target) {
 					<div><input type='checkbox' id='" + COMMON_01 + "'><label for='" + COMMON_01 + "'>資源タイマーを追加</label></input></div> \
 					<div><input type='checkbox' id='" + COMMON_02 + "'><label for='" + COMMON_02 + "'>プルダウンメニューを差し替える</label></input></div> \
 					<div><input type='checkbox' id='" + COMMON_03 + "'><label for='" + COMMON_03 + "'>天気バー上に天気予告を常時表示する</label></input></div> \
+					<div><input type='checkbox' id='" + COMMON_04 + "'><label for='" + COMMON_04 + "'>地形1.0</label></input></div> \
 				</div> \
 				<div id='tab-profile'> \
 					<div><input type='checkbox' id='" + PROFILE_01 + "'><label for='" + PROFILE_01 + "'>ランキングへのリンクを追加</label></input></div> \
@@ -6100,13 +6230,13 @@ function draw_setting_window(append_target) {
 						</div> \
 						<div><input type='checkbox' id='" + DECK_17 + "'><label for='" + DECK_17 + "'>デッキ：内政官以外を1クリックで全てファイルに下げるボタンを追加</label></input></div> \
 						<div><input type='checkbox' id='" + DECK_1D + "'><label for='" + DECK_1D + "'>デッキ：援軍武将を1クリックで撤退させるボタンを追加</label></input></div> \
-						<div><input type='checkbox' id='" + DECK_18 + "'><label for='" + DECK_18 + "'>デッキ：一括デッキセット機能を追加</label></input></div> \
+						<div><input type='checkbox' id='" + DECK_18 + "'><label for='" + DECK_18 + "'>デッキ：警護一括デッキセット機能を追加</label></input></div> \
 						<div><input type='checkbox' id='" + DECK_1B + "'><label for='" + DECK_1B + "'>デッキ：一括ラベルセット機能を追加</label></input></div> \
 						<div><input type='checkbox' id='" + DECK_1C + "'><label for='" + DECK_1C + "'>デッキ：現在の所持枚数をファイルの上部へ移動する</label></input></div> \
 						<div class='red'>以下の機能はカード表示モード（小）でのみ有効です</div> \
 						<div><input type='checkbox' id='" + DECK_11 + "'><label for='" + DECK_11 + "'>ファイル内スキル検索機能を追加</label></input></div> \
 						<div><input type='checkbox' id='" + DECK_12 + "'><label for='" + DECK_12 + "'>スキル補正効果表示機能を追加</label></input></div> \
-						<div><input type='checkbox' id='" + DECK_13 + "'><label for='" + DECK_13 + "'>デッキ：内政スキル使用リンクの追加（回復：赤/緑、内政：青）</label></input></div> \
+						<div><input type='checkbox' id='" + DECK_13 + "'><label for='" + DECK_13 + "'>デッキ：内政スキル使用リンクの追加（回復：赤/紫、内政：青）</label></input></div> \
 						<div style='margin-left: 8px;'> \
 							<div><input type='checkbox' id='" + DECK_1A + "'><label for='" + DECK_1A + "'>デッキ：内政スキル使用後画面を強制更新する</label></input></div> \
 						</div> \
@@ -6133,6 +6263,7 @@ function draw_setting_window(append_target) {
 					<div style='margin-left: 8px;'> \
 						<div><input type='checkbox' id='" + DECK_21 + "'><label for='" + DECK_21 + "'>領地一覧の並び方を初期状態に戻す</label></input></div> \
 						<div><input type='checkbox' id='" + DECK_22 + "'><label for='" + DECK_22 + "'>「新領地」で始まる領地を全て破棄する機能を追加</label></input></div> \
+						<div><input type='checkbox' id='" + DECK_23 + "'><label for='" + DECK_23 + "'>領地LVUP時のアラートを抑制</label></input></div> \
 					</div> \
 				</div> \
 				<div id='tab-report'> \
@@ -6405,21 +6536,20 @@ function deck_resttime_checker() {
 			"<div class='bold-red'>ファイル内カードスキル・回復時間検索（スキル名、スキル効果、武将カードNo.で検索可能。副将は対象外）</div>" +
 				"<fieldset style='-moz-border-radius:5px; border-radius: 5px; -webkit-border-radius: 5px; margin-bottom: 6px; border: 2px solid black;'>" +
 					"<div style='margin: 3px 3px 3px 3px;'>" +
-						"<span id =style='font-weight: bold;'>検索条件</span>" +
+						"<span style='font-weight: bold;'>検索条件</span>" +
 						"<input type='text' id='search_skill' size=20 style='margin-left:4px; margin-right: 4px; padding: 2px;'>" +
 						"<input type='button' id='search_file' value='検索'>&nbsp;" +
 						"<span id='search_status' style='font-weight: bold;'></span>" +
 					"</div>" +
 				"</fieldset>" +
 				"<div id='search-result-div' class='roundbox' style='display: none;'>" +
-					"<div style='padding: 4px;'>" +
+					"<div style='padding: 2px;'>" +
 						"<span style='font-weight: bold; color: red;'>スキル検索結果</span>" +
-						"<input type='button' id='close_search_file' style='margin: 4px;' value='閉じる'>&nbsp;" +
-						"<div style='overflow-y: auto; max-height: 500px;'>" +
-							"<table id='search-result' style='font-size: 8pt; display: none; margin-right: 25px;'>" +
+						"<input type='button' id='close_search_file' style='margin: 2px;' value='閉じる'>&nbsp;" +
+						"<div style='overflow-y: auto; max-height: 1050px;'>" +
+							"<table id='search-result' style='font-size: 1pt; display: none; margin-right: 50px;'>" +
 							"</table>" +
 						"</div>" +
-//						"<input type='button' id='close_search_file' style='margin: 4px;' value='閉じる'>&nbsp;" +
 					"</div>" +
 				"</div>" +
 			"</div>" +
@@ -6427,49 +6557,49 @@ function deck_resttime_checker() {
 	);
 
 	// 検索
-    var isInitialClick = true;
-    var searchSkillInput = q$("#search_skill");
-    var searchFileButton = q$("#search_file");
+	var isInitialClick = true;
+	var searchSkillInput = q$("#search_skill");
+	var searchFileButton = q$("#search_file");
 
-    function handleSearch() {
-        var target = searchSkillInput.val().replace(/[ \t　]/g, "");
-        if (target == "") {
-            alert("検索するスキル名を入力してください。");
-            return;
-        }
-        searchFileButton.val("処理実行中").prop("disabled", true);
+	function handleSearch() {
+		var target = searchSkillInput.val().replace(/[ \t　]/g, "");
+		if (target == "") {
+			alert("検索するスキル名を入力してください。");
+			return;
+		}
+		searchFileButton.val("処理実行中").prop("disabled", true);
 
-        q$("#search-result-div").css({'display':'none'});
-        q$("#search-result").css({'display':'none'});
-        q$("#search-result tr").remove();
-        search_skills(target);
-    }
+		q$("#search-result-div").css({'display':'none'});
+		q$("#search-result").css({'display':'none'});
+		q$("#search-result tr").remove();
+		search_skills(target);
+	}
 
-    q$("#search_file").on('click', function(event) {
-        if (isInitialClick) {
-            isInitialClick = false;
-            return;
-        }
-        event.preventDefault();
-        handleSearch();
-    });
+	q$("#search_file").on('click', function(event) {
+		if (isInitialClick) {
+			isInitialClick = false;
+			return;
+		}
+		event.preventDefault();
+		handleSearch();
+	});
 
-    searchSkillInput.on('keydown', function(event) {
-        if (event.keyCode === 13) {
-            if (isInitialClick) {
-                isInitialClick = false;
-                return;
-            }
-            event.preventDefault();
-            handleSearch();
-        }
-    });
+	searchSkillInput.on('keydown', function(event) {
+		if (event.keyCode === 13) {
+			if (isInitialClick) {
+				isInitialClick = false;
+				return;
+			}
+			event.preventDefault();
+			handleSearch();
+		}
+	});
 
-    q$("#search_skill").on('click', function(event) {
-        if (event.target === searchSkillInput[0]) {
-            isInitialClick = false;
-        }
-    });
+	q$("#search_skill").on('click', function(event) {
+		if (event.target === searchSkillInput[0]) {
+			isInitialClick = false;
+		}
+	});
 
 	// 閉じる
 	q$("input[id='close_search_file']").on('click',
@@ -6546,12 +6676,12 @@ function deck_resttime_checker() {
 							if (unset.length > 0 && unset.eq(0).text() == '戦闘不可カード') {
 								continue;
 							}
-
-                            // セットできないカードは除外
+                             // セットできないカードは除外
                             var isset = q$("div[class^='left'] div[class='set']", cards.eq(i));
                             if (isset.length == 0) {
                                 continue;
                             }
+
 
 							// カードID
 							var match = q$("div[class^='left'] a[class^='thickbox']", cards.eq(i)).attr('href').match(/cardWindow_(\d+)/);
@@ -6561,9 +6691,8 @@ function deck_resttime_checker() {
 							var skillTexts = q$("#cardWindow_" + cid, cards.eq(i));
 
 							// 基礎情報(武将名、武将レベル、コスト）
-                            var cname = q$("div[class^='illustMini__div--name']", cards.eq(i)).text();
+ 							var cname = q$("div[class^='illustMini__div--name']", cards.eq(i)).text();
 							var info = q$("table[class='statusParameter1'] tbody tr", cards.eq(i));
-//							var cname = q$("td", info.eq(1)).eq(0).text();
 							var clevel = q$("td", info.eq(2)).eq(0).text();
 							var cost = q$("td", info.eq(3)).eq(0).text();
 							var chp = q$("td", info.eq(5)).eq(0).text();
@@ -6573,11 +6702,10 @@ function deck_resttime_checker() {
 							var info2 = q$("div[class='kaifuku_cnt']", cards.eq(i));
 							var skills = [];
 							for (var j = 2; j < info2.length || j <= 5; j++) {
-                                // 副将スキルは外す (2023/05/26 by ぷらじ)
-//                                var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "").replace(/^.*:/, "");
-                                var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "");
-                                if (skill.match(/^副/) != null) continue;
-                                skill = skill.replace(/^.*:/, "");
+								// 副将スキルは外す (2023/05/26 by pla2999)
+								var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "");
+								if (/^副/.test(skill)) continue;
+								skill = skill.replace(/^.*:/, "");
 								var rest = q$("p", info2).eq(j).text().replace(/[\t]/g, "");
 								skills.push({name: skill, rest: rest});
 							}
@@ -6649,25 +6777,22 @@ function deck_resttime_checker() {
 								var chkb = b.skills[0].skill.rest.replace(/[: -]/g, "");
 								if (!isNaN(parseInt(chka)) && !isNaN(parseInt(chkb))) {
 									return parseInt(chka) < parseInt(chkb) ? -1 : 1;
-//								}
-//								if (a.skills[0].skill.rest == "回復済み") {
-//									return -1;
 								}
 								if (a.skills[0].skill.rest == "回復済み") {
-                                    if (b.skills[0].skill.rest == "回復済み") {
-                                        return 0;
-                                    } else {
-                                        return -1;
-                                    }
+									if (b.skills[0].skill.rest == "回復済み") {
+										return 0;
+									} else {
+										return -1;
+									}
 									return a.skills[0].page < b.skills[0].page ? -1 : 1;
-                                }
+                                 }
 								if (b.skills[0].skill.rest == "回復済み") {
 									return 1;
 								}
 								if (!isNaN(parseInt(chka))) {
 									return -1;
 								}
-                                return a.skills[0].page < b.skills[0].page ? -1 : 1;
+								return a.skills[0].page < b.skills[0].page ? -1 : 1;
 							}
 						);
 
@@ -6723,15 +6848,14 @@ function deck_resttime_checker() {
 											"<span style='cursor: pointer; color: " + color + ";'>[スキル使用]</span>" +
 											"</td>";
 									} else {
-//										tr += "<td class='tpad'>" + result[i].skills[j].skill.rest + "</td>";
-                                        var recovery_time = result[i].skills[j].skill.rest;
-                                        if (/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(recovery_time)) {
-                                            var remain_time = parseInt((new Date(recovery_time) - new Date())/(1000 * 60));
-                                            tr += "<td class='tpad'>" + recovery_time + "(" + remain_time + "分)" + "</td>";
-                                        } else {
-                                            tr += "<td class='tpad'>" + recovery_time + "</td>";
-                                        }
-                                    }
+										var recovery_time = result[i].skills[j].skill.rest;
+										if (/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(recovery_time)) {
+											var remain_time = parseInt((new Date(recovery_time) - new Date())/(1000 * 60));
+											tr += "<td class='tpad'>" + recovery_time + "(" + remain_time + "分)" + "</td>";
+										} else {
+											tr += "<td class='tpad'>" + recovery_time + "</td>";
+										}
+									}
 								} else {
 									tr += "<td class='tpad'>-</td>" +
 											"<td class='tpad'>-</td>";
@@ -7018,9 +7142,9 @@ function multipleLabelSet(is_move_top_card_count) {
 							multiple_labe_set_finalstep(selected_label, cids);
 						}
 
- 						wait = false;
+						wait = false;
 					});
-				}, AJAX_REQUEST_INVERVAL
+				}, AJAX_REQUEST_INTERVAL
 			);
 		}
 	);
@@ -7064,6 +7188,11 @@ function multipleLabelSet(is_move_top_card_count) {
 	}
 }
 
+
+
+
+
+
 //--------------------------//
 // デッキ：一括デッキセット //
 //--------------------------//
@@ -7079,12 +7208,12 @@ function multipleDeckSet() {
                 "<div id='multiple_set_status'>" +
                     "<span style='margin-left: 4px;'>一括デッキセット</span>" +
                     "<select id='multiple_set_mode' style='margin: 4px;'>" +
+   　　　　　　　　　　　　　　     "<option value='lowcost'>低コスト武将（コスト順）</option>" +
                         "<option value='gi'>魏の軍極・軍防・督戦対象武将</option>" +
                         "<option value='go'>呉の軍極・軍防・督戦対象武将</option>" +
                         "<option value='shoku'>蜀の軍極・軍防・督戦対象武将</option>" +
                         "<option value='hoka'>他の軍極・軍防・督戦対象武将</option>" +
                         "<option value='renkan'>連環の計対象武将</option>" +
-                        "<option value='lowcost'>低コスト武将（コスト順）</option>" +
                     "</select>" +
                     selects.prop('outerHTML') +
 /*
@@ -7093,7 +7222,7 @@ function multipleDeckSet() {
                         "<option value='patrol'>警護デッキ</option>" +
                     "</select>" +
 */
-                    "<input id='multi_card_set' type='button' style='font-size: 12px;' value='実行'></input>" +
+                    "<input id='multi_card_set' type='button' style='font-size: 20px;' value='実行'></input>" +
                     "<div id='multiple_deckset_status' style='font-weight: bold;'></div>" +
                 "<div>"+
 			"</div>" +
@@ -7122,6 +7251,7 @@ function multipleDeckSet() {
 //		"</div>"
 //	);
 
+
 	// 一括デッキセットボタン
 	q$("#multi_card_set").on('click',
 		function() {
@@ -7129,13 +7259,14 @@ function multipleDeckSet() {
 			q$("#multi_card_set").prop('disabled', 'true');
 			q$("#multiple_deckset_div").css('display', 'block');
 
-            // 選択した一括対象
+			// 選択した一括対象
 			var select_target = q$("#multiple_set_mode option:selected").val();
 
 			// 選択した設定先拠点
 			var selected = q$("#multiple_set_village option:selected");
 			var select_village = selected.val();
             var village_kind = selected.index() === 0 ? 1: 2;
+
             // 選択したデッキ
             var select_mode = q$("input[name='deck_mode']").val();
 
@@ -7159,7 +7290,9 @@ function multipleDeckSet() {
             }
 
             var target_url = BASE_URL + '/card/deck.php?deck_mode=' + select_mode+ url_params;
+
             history.pushState({}, "", target_url);
+
 
             var max_page = 1;
             var freecost;
@@ -7201,9 +7334,10 @@ console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
 
         q$("#multiple_deckset_status").text("一括デッキセット 対象検索中 (0/" + max_page + " page(s)), 候補武将数：0");
 
+
 			// ファイルの検索
 			var wait = false;
-//			var count = 1;
+ //	    	var count = 1;
 			var generals = [];
 			var general_ct = 0;
             var used = [];
@@ -7245,7 +7379,7 @@ console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
 								// カードID
 								var match = q$("div[class^='left'] a[class^='thickbox']", cards.eq(i)).attr('href').match(/cardWindow_(\d+)/);
 								if (match == null) {
-                                    continue;
+									continue;
 								}
 								var cid = match[1];
 
@@ -7265,7 +7399,7 @@ console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
 									continue;
 								}
 
-                                var card_no = parseInt(q$("td", info.eq(0)).eq(0).text());
+                                 var card_no = parseInt(q$("td", info.eq(0)).eq(0).text());
                                 if (q$.inArray(card_no, used) != -1) {
 console.log("card_no: " + card_no + " already used!");
                                     continue;
@@ -7306,7 +7440,7 @@ console.log("after pushed generals: " + generals[general_ct]);
 									} else if (a.target == 'lowcost') {
 										// 低コストの順
 										if (a.cost != b.cost) {
-											return a.cost > b.cost ? 1 : -1;
+											return a.cost < b.cost ? 1 : -1;
 										}
 									} else {
 										// 軍極系はコストの低い順
@@ -7317,6 +7451,7 @@ console.log("after pushed generals: " + generals[general_ct]);
 									return 0;
 								}
 							);
+
 							// 候補の選定
 //							var used = [];
 //							var choosed = [];
@@ -7327,7 +7462,7 @@ console.log("No more general can up! i: " + i);
                                     break;
 								}
 /*
-                                if (q$.inArray(generals[i].name, used) != -1) {
+                               if (q$.inArray(generals[i].name, used) != -1) {
 									continue;
 								}
 */
@@ -7404,17 +7539,17 @@ console.log("finalstep");
 				if (select_target == "renkan") {
 					tr += "<td class='tpad'>" + targets[j].cint + "</td>";
 				} else if (select_target == "lowcost") {
-					tr += "<td class='tpad'>" + targets[j].cgauge + "</td>";
+					tr += "<td class='tpad'>" + targets[i].cgauge + "</td>";
 				}
 				tr += "</tr>";
 			}
 
 			// 見出し
 			q$("#multiple_deckset_result").append(tr);
-
-            q$("#multiple_deckset_result_div").css({'display':'block'});
+                       q$("#multiple_deckset_result_div").css({'display':'block'});
             q$("#multiple_deckset_result").css({'display': 'block'});
 */
+
 			// 武将の配置
 			var ssid = getSessionId();
 
@@ -7446,7 +7581,7 @@ console.log("POST: cardno: " + targets[count - 1].cardno);
 						count++;
 						if (count > max) {
 							clearInterval(timer1);
-                            location.reload();
+                           location.reload();
                             wait = true;
 						} else {
                             wait = false;
@@ -7458,6 +7593,7 @@ console.log("POST: cardno: " + targets[count - 1].cardno);
 	}
 }
 
+
 //----------------------------------------------------------------------
 // デッキ：デッキ解除追加
 //----------------------------------------------------------------------
@@ -7468,7 +7604,7 @@ function addDropDeckCard() {
 	}
 
 	// ファイルに戻すボタンのイベントを書き換える
-	var deckcards = q$(".deck_tab:eq(0) div[class^='cardColmn']");
+	var deckcards = q$(".deck_tab div[class^='cardColmn']");
 	for (var i = 0; i < deckcards.length; i++) {
 		var base = q$("div[class='clearfix']", deckcards.eq(i));
 		var inner_a = base.children('a');
@@ -7480,8 +7616,9 @@ function addDropDeckCard() {
 				inner_a.replaceWith("<span class='pointer' id='card_" + match[1] + "'>" + inner_a.html() + "</span>");
 				base.children('span').on(
 					'click', function() {
+
 						var match = q$(this).attr('id').match(/_([0-9].*)/);
-						var card_id = match[1];
+						card_id = match[1];
 
 						// 状態更新
 						var elem = q$(this);
@@ -7875,6 +8012,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 	var deckcards = q$("#cardListDeck form[class='clearfix']").children("div[class='cardColmn']");
 	var cards = q$("#cardFileList div[class='cardStatusDetail label-setting-mode']");
 
+
 	var villages = [];
 	var domesticMainVacantCost = 0;	// 内政用本拠空きコスト
 	var domesticSubVacantCost = 0;	// 内政用拠点空きコスト
@@ -7935,7 +8073,6 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 			var match = q$("div[class='illustMini'] a[class^='thickbox']", elems_l).attr('href').match(/inlineId=cardWindow_(\d+)/);
 			var skills = q$("div[id='cardWindow_" + match[1] + "'] ul[class^='back_skill'] li", cards.eq(i));
 			var skillTexts = q$("div[id='cardWindow_" + match[1] + "'] ul[class^='back_skill'] div", cards.eq(i));
-
 			// デッキにセットできるかチェック
 			var is_active = false;
 			if (elems_l.children("div[class='set']").length == 1) {
@@ -7967,8 +8104,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 						// 使用済みスキルは除外
 						continue;
 					}
-
-					// 現在拠点の取得
+                   // 現在拠点の取得
 					var village_id = q$("#deck_add_selected_village").val();
 					var village_info = (function(){
 						var info = null;
@@ -7999,7 +8135,6 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 									var recover_html = q$(this).parent().children('td').html();
 
 									var elembase = q$(this).parents("div[class='cardStatusDetail label-setting-mode']");
-
 									// コストチェック
 									var card_cost = parseFloat(q$('div.right table.statusParameter1 tr:eq(3) td:eq(0)', elembase).text());
 									if (card_cost > useSkillVacantCost) {
@@ -8078,10 +8213,9 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 
 									// 現在のスキルhtml取得
 									var recover_html = q$(this).parent().children('td').html();
-
 									var elembase = q$(this).parents("div[class='cardStatusDetail label-setting-mode']");
-
 									var card_cost = parseFloat(q$('div.right table.statusParameter1 tr:eq(3) td:eq(0)', elembase).text());
+
 
 									if (village_info.isset_domestic) {
 										alert(`${village_info.village_name}に内政設定済みの武将がいるため使用できません`);
@@ -8099,14 +8233,13 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 
 									// 使用スキルの取得
 									var use_skill = q$(this).parent().children('td').text().replace(/[ \t\r\n]/g, "").replace(/\(T\)/, '');
-
-									var skill_info = getSkillInfo(use_skill, q$('div.set a.control__button--deck-set-small', elembase).attr('href'));
+　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　var skill_info = getSkillInfo(use_skill, q$('div.set a.control__button--deck-set-small', elembase).attr('href'));
 									var skill_id = skill_info.skill_id;
 									var card_id = skill_info.card_id;
 
 									// スキル発動で終了（＝内政）
 
-									// ステータス表示変更
+                                    // ステータス表示変更
 									q$(this).parent().children('td').html(
 										"<span style='color: blue;'>スキルEXEX発動中</span>"
 									);
@@ -8159,8 +8292,8 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 				if (is_active == true) {
 					el.before(
 						"<div>" +
-							"<input type='button' id='deck_domestic_" + i + "' style='font-size: 10px;' value='内政'></input>" +
-							"<input type='button' id='deck_set_" + i + "' style='font-size: 10px;' value='配置'></input>" +
+							"<input type='button' id='deck_domestic_" + i + "' style='font-size: 8px;' value='内政'></input>" +
+							"<input type='button' id='deck_set_" + i + "' style='font-size: 12px;' value='配置'></input>" +
 							"<input type='button' id='deck_defense_" + i + "' style='font-size: 10px;' value='警護'></input>" +
 							"<span style='margin-left: 1px; font-size: 12px;'>" +
 								selects.prop('outerHTML') +
@@ -8170,8 +8303,8 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 				} else {
 					el.before(
 						"<div>" +
-							"<input type='button' style='font-size: 10px;' value='内政' disabled></input>" +
-							"<input type='button' style='font-size: 10px;' value='配置' disabled></input>" +
+							"<input type='button' style='font-size: 8px;' value='内政' disabled></input>" +
+							"<input type='button' style='font-size: 12px;' value='配置' disabled></input>" +
 							"<input type='button' style='font-size: 10px;' value='警護' disabled></input>" +
 							"<span style='margin-left: 1px; font-size: 12px;'>" +
 								selects.prop('outerHTML') +
@@ -8293,7 +8426,7 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 			var select_id = id_name + '_select';
 			var addHtml = "<div style='margin-bottom: 4px;'><select id='" + select_id + "' style='width: 200px;'><option value=''>指定なし</option>";
 
-			var skills = q$("ul[class^='back_skill'] li", deckcards.eq(i).children("div[id*='card_frontback']").eq(0));
+			var skills = q$("ul[class='back_skill'] li", deckcards.eq(i).children("div[id*='card_frontback']").eq(0));
 			for (var j = 0; j < skills.length; j++) {
 				var skill = skills.eq(j).children("span[class*=skillName]").text().replace(/[ \t\r\n]/g, "");
 				if (skill != "") {
@@ -8757,9 +8890,9 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 	function exec_domestic_step1(element) {
 		var elembase = element.parents("div[class='cardStatusDetail label-setting-mode']");
 		var card_id = q$(elembase).data('card-id');
-
 		// 拠点IDの取得
 		var village_id = element.parent().find('select').val();
+
 
 		// ステータス表示変更
 		elembase.find("div[class*='set']").eq(0).attr('class','set dis_set_mini').css('background-color', 'pink').html("拠点変更中");
@@ -9479,7 +9612,7 @@ function show_message_image() {
 
 	var elem_body = q$("#messageBody").html();
 
-	// 展開後gyazoはimgタグを付与
+// 展開後gyazoはimgタグを付与
 	var match = elem_body.match(/https:\/\/i.gyazo.com\/[a-z0-9]+\.(png|gif)/g);
 	if (match != null) {
 		for (var i = 0; i < match.length; i++) {
@@ -9500,12 +9633,12 @@ function show_message_image() {
 		// まずpngにしてみる
 		for (var i = 0; i < match.length; i++) {
 			var eid = "gimg_" + i;
-			var url = match[i].replace("http://gyazo.com/", "");
+			var url = match[i].replace("https://gyazo.com/", "");
 			elem_body = elem_body.replace(
-				"http:\/\/gyazo.com\/" + url,
+				"https:\/\/gyazo.com\/" + url,
 				"<span>" +
 					"<div><a href='" + match[i] + "' target='_blank'>" + match[i] + "</a></div>" +
-					"<img id='" + eid + "' src='http://i.gyazo.com/" + url + ".png' style='max-width: 100%; border: 1px solid black;'></img>" +
+					"<img id='" + eid + "' src='https://i.gyazo.com/" + url + ".png' style='max-width: 100%; border: 1px solid black;'></img>" +
 				"</span>"
 			);
 		}
@@ -9519,7 +9652,7 @@ function show_message_image() {
 				var vid = q$(this).attr('id');
 				q$("#" + vid).off();
 				var isrc = q$(this).attr('src');
-				isrc = isrc.replace("png", "gif");
+				isrc = isrc.replace("png", "jpg");
 				q$("#" + vid).attr('src', isrc);
 				setTimeout(
 					function() {
@@ -9527,7 +9660,7 @@ function show_message_image() {
 							var vid = q$(this).attr('id');
 							q$("#" + vid).off();
 							isrc = isrc.replace("i.gyazo.com", "gyazo.com");
-							isrc = isrc.replace(".gif", " (展開できませんでした)");
+							isrc = isrc.replace(".jpg", " (展開できませんでした)");
 							q$("#" + vid).parent().html(isrc);
 						});
 					}, 50
@@ -9536,7 +9669,6 @@ function show_message_image() {
 		}
 	}
 }
-
 // 時間整形
 function formatSeconds(remain) {
 	var hour = parseInt(remain / 3600);
@@ -9564,7 +9696,7 @@ function formatSeconds(remain) {
 // 自動内政スキル実行 STEP1：内政官設定チェック
 function exec_domestic_skill_step1(element, is_after_drop, village_id, card_id, use_skill, success_func, fail_func) {
 	// ステータス表示変更
-    element.html(
+	element.html(
 		"<span style='color: blue;'>拠点確認中</span>"
 	);
 
@@ -9775,6 +9907,7 @@ function exec_domestic_skill_step3(element, card_id, use_skill, is_after_drop, s
 						skill_id = "";
 					}
 				}
+
 				if (card_found == false || skill_id == "") {
 					fail_func();	// リカバー処理
 
@@ -9890,7 +10023,6 @@ function exec_domestic_skill_step_final(element, card_id, success_func, fail_fun
 		}, AJAX_REQUEST_INTERVAL
 	);
 }
-
 // スキルリンクを渡すと、indexから始まるスキル情報のリストを返す
 function parseSkillListQuery(queryString) {
 	var entries = new URLSearchParams(queryString).entries();
@@ -9940,9 +10072,9 @@ function getSkillInfo(skillName, queryString) {
 		if (this.skill_name === skillName) {
 			info = Object.assign({}, this);
 			return false;
-		}
+	　　　　　　　}
 	});
-	return info;
+　　　return info;
 }
 
 // 基本となるデッキ情報
@@ -10180,7 +10312,7 @@ function is_healing_skill(skill_text) {
 
 	// 戦闘系、個人専用、忠誠回復系スキルは false
 	var isExcludeSkillText = ['戦闘', '自身', '忠誠'];
-	for (var i = 0; i < isExcludeSkillText.length; i++) {
+　	for (var i = 0; i < isExcludeSkillText.length; i++) {
 		if (skill_text.indexOf(isExcludeSkillText[i]) != -1) {
 			return false;
 		}
@@ -10216,7 +10348,6 @@ function is_healing_skill_at_anywhere(skill_text) {
 
 	return true;
 }
-
 //------------------------------//
 // beyondの設定の読み込み・保存 //
 //------------------------------//
@@ -10228,6 +10359,7 @@ function getDefaultOptions() {
 	settings[COMMON_01] = true;		// 資源タイマー
 	settings[COMMON_02] = true;		// プルダウンメニューを差し替える
 	settings[COMMON_03] = true; 	// 天気予告常時表示
+ 	settings[COMMON_04] = (["w11","w24","w28","w32"].indexOf(SERVER_NAME) < 0);	// 地形1.0 (公開時点で未対応鯖は初期値false、それ以外はtrue)
 
 	// プロフィール
 	settings[PROFILE_01] = true;	// ランキングのリンク追加
@@ -10265,7 +10397,7 @@ function getDefaultOptions() {
 	settings[DECK_03] = true;		// 共通：ページ切り替えのプルダウンを追加
 	settings[DECK_11] = true;		// デッキ：ファイル内スキル検索機能の追加
 	settings[DECK_12] = true;		// デッキ：スキル補正効果表示機能の追加
-	settings[DECK_13] = true;		// デッキ：内政スキル使用リンクの追加（回復：赤/緑、内政：青）
+	settings[DECK_13] = true;		// デッキ：内政スキル使用リンクの追加（回復：赤、内政：青）
 	settings[DECK_14] = true;		// デッキ：1クリックデッキセットボタン追加
 	settings[DECK_15] = false;		// デッキ：ファイルに下げるボタンを1クリックで使用に変更
 	settings[DECK_16] = false;		// デッキ：内政官を1クリックでファイルに下げるボタンを追加
@@ -10278,6 +10410,7 @@ function getDefaultOptions() {
 	settings[DECK_1D] = false;		// デッキ：援軍武将を1クリックで撤退させるボタンを追加
 	settings[DECK_21] = true;		// 領地一覧：領地一覧の並び方を初期状態に戻す
 	settings[DECK_22] = true;		// 領地一覧：「新領地」で始まる領地を全て破棄
+   	settings[DECK_23] = true;		// 領地一覧：領地LVUP時のアラートを抑制
 	settings[DECK_31] = true;		// 修行合成でレベルが上がった時に、レベルアップボタンを追加
 	settings[DECK_32] = true;		// 自動スキルレベルアップ合成機能を追加
 	settings[DECK_33] = true;		// スキルレベルアップ合成画面でベースカードの交換機能を追加
