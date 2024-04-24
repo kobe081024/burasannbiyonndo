@@ -4,7 +4,7 @@
 // @include		https://*.3gokushi.jp/*
 // @include		http://*.3gokushi.jp/*
 // @description	ブラウザ三国志beyondリメイク by Craford 氏 with RAPT
-// @version		1.09.27.1coach
+// @version		1.09.38coach
 // @updateURL	http://craford.sweet.coocan.jp/content/tool/beyond/bro3_beyond.user.js
 
 // @grant	GM_addStyle
@@ -119,13 +119,24 @@
 //						- 自動スキルLVUP、カード検索、内政スキル使用など、スキル系の機能について、SLカードやL覇など5スキル対応カードでも動作するように
 // 1.09.26	2023/04/29	RAPT. 2023/04/27のメンテナンス以降において、デッキ画面の仕様変更により、デッキ系の機能が動作しなくなっていたのを修正
 // 1.09.27	2023/04/29	RAPT. メニューに北伐関係の項目を追加
+// 1.09.28	2023/05/30	RAPT. 「デッキ：ファイルに下げるボタンを1クリックで使用に変更」が警護デッキで動作していなかった不具合を修正
+// 1.09.29	2023/06/04	RAPT. 回復時間検索、「デッキ：一括デッキセット機能を追加」の不具合修正 by @pla2999 in #38
+// 1.09.30	2023/06/27	RAPT. 「領地一覧：領地LVUP時のアラートを抑制」を追加
+//						- 「同盟トップ：同盟員全領地座標CSV取得」機能が動作しなくなっていたのを修正
+//						- 「同盟トップ：同盟員本拠座標取得」機能が動作しなくなっていたのを修正
+// 1.09.31	2023/07/25	RAPT. 「共通：地形1.0」を追加
+//						- メニューの一部を地形1.0対応
+//						- 地形1.0マップで「Profile：NPCの隣接同盟探索」が動作するよう修正
+// 1.09.32	2023/07/27	RAPT. 1.09.29で同盟ログ検索、一括ラベルセットが動かなくなっていた不具合を修正
+// 1.09.33	2023/08/11	RAPT. 「倉庫からファイルに移動する画面へ一括ラベル機能を追加」を追加
+//						- 「Profile：資源パネル探索」が動作するよう修正
+//						- 「Profile：NPC座標探索」が動作するよう修正
+// 1.09.34	2023/08/25	RAPT. スキル連続レベルアップ時、主将スキルとしての副将の明鏡スキルもLVUPできるように
+// 1.09.35	2023/08/29	同盟内ランキングソート不具合、内政官を下げるボタンのサイズ、書簡内のgyazoの展開の不具合修正 by @pla2999 #61
+// 1.09.36	2023/11/28	11/15のメンテ以降で、同盟画面のBeyond機能が動作しなくなっていたのを修正
+// 1.09.37	2023/12/11	カード倉庫画面で、カードNo.によるトレードと図鑑へのリンクを追加 by @pla2999 #64
+// 1.09.38	2024/02/15	RAPT. 地形2.0対応。地形未対応時の処理を削除
 
-
-// TODO:
-
-// 内政ボタン/内政スキルで、すでにその拠点に内政官がいる場合、置き換えるかの確認。「呉の治世」スキル発動中です。内政官を置き換えますか？　はい「いいえ」
-
-// ローカル開発なので、uploadする前に正規バージョンにすること
 //----------------------------------------------------------------------
 // ロケーションが info.3gokushi.jp の場合はなにもしない
 //----------------------------------------------------------------------
@@ -217,9 +228,8 @@ if (ua.indexOf("Firefox") > 0 && GM_info.version >= 4) {
 var SERVER_SCHEME = location.protocol + "//";
 var BASE_URL = SERVER_SCHEME + location.hostname;
 var SERVER_NAME = location.hostname.match(/^(.*)\.3gokushi/)[1];
-var SORT_UP_ICON = BASE_URL + "/20160427-03/extend_project/w945/img/trade/icon_up.gif";
-var SORT_DOWN_ICON = BASE_URL + "/20160427-03/extend_project/w945/img/trade/icon_down.gif";
-//var AJAX_REQUEST_INTERVAL = 200;   // (ms)
+var SORT_UP_ICON = BASE_URL + "/BscROi7Vz9V1KQRhS5v3IDqASJOBMbShEHSmE3v+WhU=/20240402-01/extend_project/w945/img/trade/icon_up.gif";
+var SORT_DOWN_ICON = BASE_URL + "/BscROi7Vz9V1KQRhS5v3IDqASJOBMbShEHSmE3v+WhU=/20240402-01/extend_project/w945/img/trade/icon_down.gif";
 var AJAX_REQUEST_INTERVAL = 100; // (ms)
 //----------------------------------------------------------------------
 // 画面設定項目-保存フィールド名対応定数群
@@ -228,6 +238,7 @@ var AJAX_REQUEST_INTERVAL = 100; // (ms)
 var COMMON_01 = 'co01';		// 資源タイマー
 var COMMON_02 = 'co02';		// プルダウンメニューを差し替える
 var COMMON_03 = 'co03';		// 天気予告常時表示
+//var COMMON_04 = 'co04';		// 地形1.0 (2024年時点ですべての鯖導入済のため削除)
 
 // プロフィールタブ
 var PROFILE_01 = 'pr01';	// ランキングリンク追加
@@ -278,6 +289,7 @@ var DECK_1C = 'de1c';		// デッキ：現在の所持枚数をファイルの上
 var DECK_1D = 'de1d';		// デッキ：援軍武将を1クリックで撤退させるボタンを追加
 var DECK_21 = 'de21';		// 領地一覧：領地一覧のソートに取得順を追加
 var DECK_22 = 'de22';		// 領地一覧：「新領地」で始まる領地を全て破棄
+var DECK_23 = 'de23';		// 領地一覧：領地LVUP時のアラートを抑制
 var DECK_31 = 'de31';		// 修行合成でレベルが上がった時に、レベルアップボタンを追加
 var DECK_32 = 'de32';		// 自動スキルレベルアップ合成機能を追加
 var DECK_33 = 'de33';		// スキルレベルアップ合成画面でベースカードの交換機能を追加
@@ -285,6 +297,7 @@ var DECK_34 = 'de34';		// 合成画面のボタン説明表示を消す
 var DECK_35 = 'de35';		// 自動副将枠解放合成機能を追加
 var DECK_51 = 'de51';		// 兵士管理リンクをクリックした際の初期タブを「全て表示」にする
 var DECK_61 = 'de61';		// スキル3つ以上、レベル50、スコア100万のいずれかに該当するカードを倉庫へ移動できなくする
+var DECK_71 = 'de71';		// 倉庫からファイルに移動する画面へ一括ラベル機能を追加
 
 // 報告書タブ
 var REPORT_01 = 're01';		// 自動整形機能の追加
@@ -702,7 +715,7 @@ function profileControl() {
 
 	// 同盟ランキング着色用のユーザー名記録
 	if (g_beyond_options[ALLIANCE_02]) {
-		var username = q$("#gray02Wrapper table[class='commonTables'] tbody tr").eq(1).children("td").eq(1).text().replace(/[ \t\r\n]/g, "");
+		var username = q$("#gray02Wrapper table.profileTable tbody tr").eq(1).children("td").eq(0).text().replace(/[ \t\r\n]/g, "");
 		GM_setValue(SERVER_NAME + '_username', username);
 	}
 
@@ -958,12 +971,12 @@ function profileControl() {
 							"<div style='font-weight: bold; color: red; font-size: 12px;'>NPC調査対象</div>" +
 							"<div style='margin-left: 8px;'>" +
 								"<div>" +
-									"<input type='radio' name='search_npc_target' value='pos'>" +
+									"<input id='search_pos' type='radio' name='search_npc_target' value='pos'>" +
 										"<label for='search_pos'>NPC座標（こちらの探索は時間がかかります）</label>" +
 									"</input>" +
 								"</div>" +
 								"<div>" +
-									"<input type='radio' name='search_npc_target' value='neighbor' checked>" +
+									"<input id='search_neighbor' type='radio' name='search_npc_target' value='neighbor' checked>" +
 										"<label for='search_neighbor'>NPCの隣接同盟（NPC座標リストが必要です）</label>" +
 									"</input>" +
 								"</div>" +
@@ -975,7 +988,7 @@ function profileControl() {
 						"</div>" +
 						"<div>" +
 							"<input type='checkbox' id='search_event_npc' style='margin-left: 6px;'>" +
-								"<label for='search_event'>イベント鯖マップ探索</label>" +
+								"<label for='search_event_npc'>イベント鯖マップ探索</label>" +
 							"</input>" +
 						"</div>" +
 						"<div>" +
@@ -1105,17 +1118,17 @@ function profileControl() {
 				y1 = sw;
 			}
 
-			if (x1 < -1200) {
-				x1 = -1200;
+			if (x1 < -1300) {
+				x1 = -1300;
 			}
-			if (x2 > 1200) {
-				x2 = 1200;
+			if (x2 > 1300) {
+				x2 = 1300;
 			}
-			if (y1 < -1200) {
-				y1 = -1200;
+			if (y1 < -1300) {
+				y1 = -1300;
 			}
-			if (y2 > 1200) {
-				y2 = 1200;
+			if (y2 > 1300) {
+				y2 = 1300;
 			}
 
 			var sizex = Math.abs(x2 - x1) + 1 - 10 * 2;
@@ -1185,22 +1198,18 @@ function profileControl() {
 				}
 
 				var matches = [];
-				for (var i = 0; i < targets.length; i++) {
-					var matchstr = "'" + '★'.repeat(targets[i].level) +
-									"', '.*', '" + targets[i].wood +
-									"', '" + targets[i].stone +
-									"', '" + targets[i].iron +
-									"', '"	+ targets[i].food + "', '', '0', \\w+\\); over";
+ 				for (var i = 0; i < targets.length; i++) {
+ 					var matchstr = `<dt>戦力<\\/dt><dd>${'★'.repeat(targets[i].level)}[^<]*<\\/dd>.*?資源<\\/dt><dd [^>]*?>木${targets[i].wood}.*岩${targets[i].stone}.*鉄${targets[i].iron}.*糧${targets[i].food}[^<]*?<\\/dd>`
 					var reg = new RegExp(matchstr);
-					matches.push(reg);
-				}
+ 					matches.push(reg);
+ 				}
 
 				q$("#result_box").val("高速化のため、検出中のデータは最後に表示します");
 				var sx = result.x1;
 				var sy = result.y1;
 
 				var list = new Array();
-				list.push("★\t領地タイプ\tX座標\tY座標\t所有同盟\t所有者");
+				list.push("★\t領地タイプ\tX座標\tY座標\t所有同盟\t所有者\t標高");
 				var listcnt = 0;
 				var count = 1;
 				wait = false;
@@ -1224,9 +1233,10 @@ function profileControl() {
 
 					wait = true;
 
-					var loc = {'x':sx, 'y':sy, 'type':5};
+										var map_size = 51;
+					var loc = {'x':sx, 'y':sy, 'type':4};
 					q$.ajax({
-						url: BASE_URL + '/map.php',
+						url: BASE_URL + '/big_map.php',
 						type: 'GET',
 						datatype: 'html',
 						cache: false,
@@ -1234,30 +1244,40 @@ function profileControl() {
 					})
 					.done(function(res) {
 						var resp = q$("<div>").append(res);
-						var area = q$("#mapOverlayMap area", resp);
+						var area = q$("#map51-content.map-v2 li a[onmouseover]", resp);
+
 						for (var i = 0; i < area.length; i++) {
+							var attr_onmouseover = q$(area[i]).attr("onmouseover");
 							var index = -1;
 							for (var j = 0; j < matches.length; j++) {
-								if (q$(area[i]).attr("onmouseover").match(matches[j]) != null) {
+								if (attr_onmouseover.match(matches[j]) != null) {
 									index = j;
 									break;
 								}
 							}
-							if (index == -1) {
+						if (index == -1) {
 								continue;
 							}
 
-							// 一致検索
-							var match;
-							if (search_event == false) {
-							//	match = q$(area[i]).attr("onmouseover").match(/rewrite\('.*', '(.*)', '.*', '(.*)', '(.*)', '[★]+', '.*', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '', '.*'\); over.*$/);
-								match = q$(area[i]).attr("onmouseover").match(/rewriteAddRemoving\('\d+','.*', '(.*)', '.*', '(.*)', '(.*)', '[★]+', '.*', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '', '(\d+)', \w+\); over.*$/);
-							} else {
-								match = q$(area[i]).attr("onmouseover").match(/rewritePF\(.*,'.*', '(.*)', '.*', '(.*)', '(.*)', '[★]+', '.*', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '', '.*'\); over.*$/);
+							q$(area[i]).attr('href').match(/x=([-]*\d+).*y=([-]*\d+)#ptop/);
+　　　　　　　　　　　　　　　　　　　　　　　　　　　var x = parseInt(RegExp.$1, 10);
+							var y = parseInt(RegExp.$2, 10);
+	　　　　　　　					var owner = '-';
+							if (attr_onmouseover.match(/<dt>君主名<\/dt><dd>([^<]*?)<\/dd>/) !== null) {
+								owner = RegExp.$1;
 							}
-
+							var ally = '-';
+							if (attr_onmouseover.match(/<dt>同盟名<\/dt><dd>([^<]*?)<\/dd>/) !== null) {
+								ally = RegExp.$1;
+							}
+							var elevation = ''
+							if (attr_onmouseover.match(/elevation-name[^>]*?>(.+?)<\/span>/) !== null) {
+								elevation = RegExp.$1;
+							}
+							// 一致検索
+								var match = attr_onmouseover.match(/>.*?資源<\/dt><dd [^>]*?>木(\d+).*岩(\d+).*鉄(\d+).*糧(\d+)[^<]*?<\/dd>/);
 							if (match == null) {
-								clearInterval(timer);
+									clearInterval(timer);
 								q$("#search_resource_exec").text("探索中断");
 								stop = false;
 								g_event_process = false;
@@ -1266,24 +1286,19 @@ function profileControl() {
 							}
 
 							// 空き地検索で所持者がいる場合除外
-							if (match[1] != '' && search_empty == true) {
+								if (owner != '-' && search_empty == true) {
 								continue;
 							}
 
-							// 範囲外の座標の場合除外
-							var pos = match[2].match(/([-]*\d+),([-]*\d+)/);
-							if (parseInt(pos[1]) < result.x1 || parseInt(pos[1]) > result.x2) {
+								// 範囲外の座標の場合除外
+							if (x < result.x1 || x > result.x2) {
 								continue;
 							}
-							if (parseInt(pos[2]) < result.y1 || parseInt(pos[2]) > result.y2) {
+							if (y < result.y1 || y > result.y2) {
 								continue;
-							}
-							if (match[3] == '') {
-								match[1] = '-';
-								match[3] = '-';
 							}
 
-							// 結果生成
+								// 結果生成
 							list.push(
 								"★" + targets[index].level +
 								"\t" +
@@ -1291,19 +1306,20 @@ function profileControl() {
 								"," + targets[index].stone +
 								"," + targets[index].iron +
 								"," + targets[index].food + ")" +
-								"\t" + parseInt(pos[1]) +
-								"\t" + parseInt(pos[2]) +
-								"\t" + match[3] +
-								"\t" + match[1]
+								"\t" + x +
+								"\t" + y +
+								"\t" + ally +
+								"\t" + owner +
+								"\t" + elevation
 							);
 							listcnt ++;
 						}
 
 						// 探索座標切り替え
-						sx += 21;
+						sx += map_size;
 						if (sx > result.x2) {
 							sx = result.x1;
-							sy += 21;
+							sy += map_size;
 							if (sy > result.y2) {
 								// 結果ボックスに値を入れる
 								q$("#result_box").val(list.join("\r\n"));
@@ -1362,18 +1378,17 @@ function profileControl() {
 					// NPC座標探索
 					//-------------
 					if (q$("#search_event_npc").prop('checked') == false) {
-						// search_pattern = new RegExp("rewrite\\('(.*)', '.*', '.*', '(.*)', '(.*)', '([★]+)', '.*', '', '', '', '', '1', '.*'\\); overOpe");
 						search_pattern = new RegExp("rewriteAddRemoving\\('.*','(.*)', '.*', '.*', '(.*)', '(.*)', '([★]+)', '.*', '.*', '.*', '.*', '.*', '1', '.*', .*\\); overOpe");
 					} else {
 						search_pattern = new RegExp("rewritePF\\(.*,'(.*)', '.*', '.*', '(.*)', '(.*)', '([★]+)', '.*', '', '', '', '', '1', '.*'\\); overOpe");
 					}
-
+                    search_pattern = new RegExp("bigmap-caption[^>]*?>([^<]+?)<\\/dt>.*<dt>座標.+?距離<\\/dt><dd>\\((.*?)\\).+?elevation-name[^>]*?>([^<]*?)<\\/span>.*?npc-red-star[^>]*?>([★]+)");
 					q$("#npc_box").val("高速化のため、検出中のデータは最後に表示します");
 					var sx = result.x1;
 					var sy = result.y1;
 
 					var list = new Array();
-					list.push("NPC名\tX座標\tY座標\t★");
+					list.push("NPC名\tX座標\tY座標\t★\t標高");
 					var listcnt = 0;
 					var count = 1;
 					wait = false;
@@ -1398,9 +1413,10 @@ function profileControl() {
 
 						wait = true;
 
-						var loc = {'x':sx, 'y':sy, 'type':5};
+						var map_size = 51;
+						var loc = {'x':sx, 'y':sy, 'type':4};
 						q$.ajax({
-							url: BASE_URL + '/map.php',
+							url: BASE_URL + '/big_map.php',
 							type: 'GET',
 							datatype: 'html',
 							cache: false,
@@ -1408,8 +1424,8 @@ function profileControl() {
 						})
 						.done(function(res) {
 							loc = null;
-							var resp = q$("<div>").append(res);
-							var area = q$("#mapOverlayMap area", resp);
+							var resp = q$("<div />").append(res);
+							var area = q$("#map51-content.map-v2 li a[onmouseover]", resp);
 
 							// NPC座標調査
 							for (var i = 0; i < area.length; i++) {
@@ -1436,7 +1452,8 @@ function profileControl() {
 								}
 
 								// ヒットした座標を蓄積
-								list.push(match[1] + "\t" + parseInt(pos[1]) + "\t" + parseInt(pos[2]) + "\t" + "\t★" + match[4].length);
+								var item = match[1] + "\t" + parseInt(pos[1]) + "\t" + parseInt(pos[2]) + "\t" + "\t★" + match[4].length + "\t" + match[3];
+								list.push(item);
 								listcnt ++;
 
 								match = null;
@@ -1446,10 +1463,10 @@ function profileControl() {
 							area = null;
 
 							// 探索座標切り替え
-							sx += 21;
+							sx += map_size;
 							if (sx > result.x2) {
 								sx = result.x1;
-								sy += 21;
+								sy += map_size;
 								if (sy > result.y2) {
 									// NPC座標検索では座標ボックスに値を入れる
 									q$("#npc_box").val(list.join("\r\n"));
@@ -1470,8 +1487,7 @@ function profileControl() {
 					//-------------
 					// NPC隣接探索
 					//-------------
-					if (q$("#search_event_npc").prop('checked') == false) {
-						// search_pattern = new RegExp("rewrite\\('(.*)', '(.*)', '.*', '(.*)', '(.*)', '([★]*)', '.*', '.*', '.*', '.*', '.*', '.*', '.*'\\); overOpe");
+					if (q$("#search_event_npc").prop('checked') == false) {// 削除中、(地名)、(君主名)、人口、(座標)、(同盟名)、(戦力)、距離、森岩鉄糧、NPCフラグ、保護期間、深夜停戦
 						search_pattern = new RegExp("rewriteAddRemoving\\('.*','(.*)', '(.*)', '.*', '(.*)', '(.*)', '([★]*)', '.*', '.*', '.*', '.*', '.*', '.*', '.*', .*\\); overOpe");
 					} else {
 						search_pattern = new RegExp("rewritePF\\(.*,'(.*)', '(.*)', '.*', '(.*)', '(.*)', '([★]*) '.*', '.*', '.*', '.*', '.*', '.*', '.*'\\); overOpe");
@@ -1503,7 +1519,7 @@ function profileControl() {
 					var result_box = q$("#result_npc_box");
 
 					var list = new Array();
-					list.push("NPC名\tX座標\tY座標\t★\t所有同盟\t北西\t北\t北東\t西\t東\t南西\t南\t南東");
+					list.push("NPC名\tX座標\tY座標\t★\t所有盟主\t北西\t北\t北東\t西\t東\t南西\t南\t南東");
 					var listcnt = 0;
 					var count = 1;
 					var max = search_target.length;
@@ -1526,9 +1542,9 @@ function profileControl() {
 
 						wait = true;
 
-						var loc = {'x':search_target[count-1].x, 'y':search_target[count-1].y, 'type':1};
+						var loc = {'x':search_target[count-1].x, 'y':search_target[count-1].y, 'type':4};
 						q$.ajax({
-							url: BASE_URL + '/map.php',
+							url: BASE_URL + '/big_map.php',
 							type: 'GET',
 							datatype: 'html',
 							cache: false,
@@ -1536,30 +1552,83 @@ function profileControl() {
 						})
 						.done(function(res) {
 							var resp = q$("<div>").append(res);
-							var area = q$("#mapOverlayMap area", resp);
+							var area = q$("#map51-content.map-v2 li a[onmouseover]", resp);
 
 							// NPC隣接調査
-							var check = [60, 48, 59, 70, 49, 71, 50, 61, 72];
+							function checkMapCellList() {
+								var map_size = 51;
+								// 配列の順は 対象NPC砦、北西、北、北東、西、東、南西、南、南東
+								var idx_center = (map_size + 1) * ((map_size - 1) / 2);
+								var list = [idx_center];
+								if (map_size === 11) {
+									// 斜めMAPの場合、最西から北→南で並ぶ; center = 60
+									list.push(idx_center - map_size - 1);
+									list.push(idx_center - 1);
+									list.push(idx_center + map_size - 1);
+									list.push(idx_center - map_size);
+									list.push(idx_center + map_size);
+									list.push(idx_center - map_size + 1);
+									list.push(idx_center + 1);
+									list.push(idx_center + map_size + 1);
+								} else if (map_size === 51) {
+									// 51MAPの場合、最北から西→東で並ぶ; center = 1300
+									list.push(idx_center - map_size - 1);
+									list.push(idx_center - map_size);
+									list.push(idx_center - map_size + 1);
+									list.push(idx_center - 1);
+									list.push(idx_center + 1);
+									list.push(idx_center + map_size - 1);
+									list.push(idx_center + map_size);
+									list.push(idx_center + map_size + 1);
+								} else {
+									console.log("不明なMAPです。");
+								}
+								return list;
+							}
+
+							var check = checkMapCellList();
 							var tsv = "";
 							var neighbor = "";
 							for (var i = 0; i < check.length; i++) {
 								// 一致検索
-								var match = q$(area[check[i]]).attr("onmouseover").match(search_pattern);
-								if (match == null) {
+								var attr_onmouseover = q$(area[check[i]]).attr("onmouseover");
+								var axis = attr_onmouseover.match(new RegExp('距離</dt><dd>\\(([-]?\\d+),([-]?\\d+)\\)'));
+								if (axis == null) {
 									continue;
-								}
-								if (match[4] == '') {
-									match[4] = '-';
-								}
+                                }
+								// NPC砦では同盟名が取得できないので取得できなくてもエラーにしない
+ 								var ally_name = attr_onmouseover.match(new RegExp('<dt>同盟名</dt><dd>(.*?)</dd>'));
+ 								ally_name = (ally_name == null) ? '-' : ally_name[1];
+ 								if (i == 0) {
+ 									var npc_name = attr_onmouseover.match(new RegExp('<dt class=\"bigmap-caption\">(.*?)</dt>'));
+ 									if (npc_name == null) {
+									} else {
+ 										npc_name = npc_name[1];
+									}
+ 									var owner_name = attr_onmouseover.match(new RegExp('<dt>君主名</dt><dd>(.*?)</dd>'));
+ 									if (owner_name == null) {
+ 										continue;
+ 									} else {
+ 										owner_name = owner_name[1];
+ 									}
+									var star = attr_onmouseover.match(new RegExp('<span class="npc-red-star">([★]+).*?</span>'));
+									if (star == null) {
+ 										continue;
+									} else {
+ 										star = star[1].length;
+ 									}
+ 									// NPC砦名と守衛名が一致する場合は未攻略砦とし、所有君主名'-'
+ 									var ma = npc_name.match(/^(.*?)砦(\d+)$/);
+									var mo = owner_name.match(/^(.*?)守衛(\d+)$/);
+									if (ma != null && mo != null && ma[1] == mo[1] && ma[2] == mo[2]) {
+										owner_name = '-';
+									}
 
-								if (i == 0) {
-									// NPC名、座標、★数、所有同盟
-									var pos = match[3].match(/([-]*\d+),([-]*\d+)/);
-									tsv += match[1] + "\t" + parseInt(pos[1]) + "\t" + parseInt(pos[2]) + "\t★" + match[5].length + "\t" + match[4];
+									tsv += npc_name + "\t" + parseInt(axis[1]) + "\t" + parseInt(axis[2]) + "\t★" + star + "\t" + owner_name;
 								} else {
 									// 隣接（北西、北、北東、西、東、南西、南、南東の順）。所持同盟がいない場合'-'
-									if (match[4] != '-') {
-										tsv += match[4];
+									if (ally_name != '-') {
+										tsv += ally_name;
 									} else {
 										tsv += "-";
 									}
@@ -1590,7 +1659,7 @@ function profileControl() {
 							wait = false;
 						});
 					};
-					npc_timer = setInterval(neighbor_search_func, 150);
+					npc_timer = setInterval(neighbor_search_func, 1000);
 				}
 			}
 		);
@@ -1706,7 +1775,7 @@ function mapTabControl() {
 				if (all1 !== null || all2 !== null) {
 					hasWAll = true;
 				}
-				all = generalEnts.eq(i).html().match(/(獲|大徳|劫略|攻奪|収奪|趁火打劫|桃賊の襲撃)/);
+		   		 all = generalEnts.eq(i).html().match(/(鹵獲|大徳|劫略|攻奪|収奪|趁火打劫|桃賊の襲撃)/);
 				var hasPrize = false;
 				if (all != null) {
 					hasPrize = true;
@@ -1778,8 +1847,8 @@ function mapTabControl() {
 					"<div>" +
 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='checkoff_all' type='button' value='選択解除'>" +
 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_all' type='button' value='全選択'>" +
-						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_gauge_100' type='button' value='討伐99以下を選択'>" +
-						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_gauge_100' type='button' value='討伐100以上を選択'>" +
+ 						"<input style='margin-bottom: 4px; margin-right: 4px;' id='check_gauge_100' type='button' value='討伐100以下を選択'>" +
+						"<input style='margin-bottom: 4px;' id='check_gauge_max' type='button' value='討伐500を選択'>" +
 					"</div>" +
 					"<div>" +
 						html +
@@ -1872,28 +1941,31 @@ function mapTabControl() {
 				}
 			);
 
-			// 討伐99以下を選択
-			q$("#check_gauge_100").on('click',
-				function() {
-					var ents = q$("input[id*='g_troop']");
-					for (var i = 0; i < ents.length; i++) {
-						if (ents.eq(i).attr('gauge') > 99) {
-							continue;
-						}
-						ents.eq(i).prop('checked', true);
-					}
-				}
-			);
 
-			// 討伐100以上を選択
-			q$("#check_gauge_100").on('click',
-				function() {
-					var ents = q$("input[id*='g_troop']");
-					for (var i = 0; i < ents.length; i++) {
-						if (ents.eq(i).attr('gauge') < 100) {
-							ents.eq(i).prop('checked', false);
-						} else {
+			// 討伐100以下を選択
+ 			q$("#check_gauge_100").on('click',
+ 				function() {
+ 					var ents = q$("input[id*='g_troop']");
+ 					for (var i = 0; i < ents.length; i++) {
+						if (ents.eq(i).attr('gauge') > 100) {
+ 							continue;
+ 						}
+ 						ents.eq(i).prop('checked', true);
+ 					}
+ 				}
+ 			);
+
+
+			// 討伐500選択
+			q$("#check_gauge_max").on('click',
+ 				function() {
+ 					var ents = q$("input[id*='g_troop']");
+ 					for (var i = 0; i < ents.length; i++) {
+
+						if (ents.eq(i).attr('gauge') == 500) {
 							ents.eq(i).prop('checked', true);
+						} else {
+ 							ents.eq(i).prop('checked', false);
 						}
 					}
 				}
@@ -2130,7 +2202,7 @@ function allianceTabControl() {
 	if (location.pathname === "/alliance/info.php") {
 		// テーブルソーターの追加
 		if (g_beyond_options[ALLIANCE_01]) {
-			q$("table[class='tables'] th:not(:eq(0))").each(
+			q$("table.tables th:not(:eq(0))").each(
 				function(index) {
 					// ソートアイコン追加
 					q$(this).append(
@@ -2145,7 +2217,7 @@ function allianceTabControl() {
 
 					// 昇順ソートイベント
 					q$("#lowersort_" + index).on('click',
-						{selector: "table[class='tables'] tr", offset: 2, index: index, order_ascend: true},
+						{selector: "table.tables tr", offset: 2, index: index, order_ascend: true},
 						function(param) {
 							tableSorter(param.data.selector, param.data.offset, param.data.index, param.data.order_ascend);
 						}
@@ -2153,7 +2225,7 @@ function allianceTabControl() {
 
 					// 降順ソートイベント
 					q$("#uppersort_" + index).on('click',
-						{selector: "table[class='tables'] tr", offset: 2, index: index, order_ascend: false},
+						{selector: "table.tables tr", offset: 2, index: index, order_ascend: false},
 						function(param) {
 							tableSorter(param.data.selector, param.data.offset, param.data.index, param.data.order_ascend);
 						}
@@ -2161,9 +2233,12 @@ function allianceTabControl() {
 				}
 			);
 		}
+        // 伍人組対応鯖か
+		var isGonin = q$("table.info-with-alliance-power").length !== 0;
+
 
 		// 同盟情報付与
-		if (g_beyond_options[ALLIANCE_03] && q$("#contribution_table").length !== 0) {
+		if (g_beyond_options[ALLIANCE_03] && q$("#contribution_table").length !== 0 && !isGonin) { // 伍人組対応鯖では運営が機能を取り込んでいるため不要
 			var elem = q$("#gray02Wrapper table[class='commonTables'] tbody tr");
 
 			// 同盟レベル
@@ -2207,10 +2282,10 @@ function allianceTabControl() {
 		}
 
 		// 同盟ランキング内のプレイヤー着色
-		if (g_beyond_options[ALLIANCE_02]) {
+		if (g_beyond_options[ALLIANCE_02]) { // 運営が機能を取り込んでいるため削除していいかも(2023年追記)
 			var username = GM_getValue(SERVER_NAME + '_username', null);
 			if (username != null) {
-				var elems = q$("table[class='tables'] tbody tr");
+				var elems = q$("table.tables tbody tr");
 				for (var i = 0; i < elems.length; i++) {
 					var elem = q$("td a", elems.eq(i));
 					if (elem.length > 0) {
@@ -2226,7 +2301,7 @@ function allianceTabControl() {
 
 		// CSVダウンロード機能追加、同盟員本拠座標取得機能追加
 		if (g_beyond_options[ALLIANCE_04] || g_beyond_options[ALLIANCE_05]) {
-			var tb = q$("table[class='tables']");
+			var tb = q$("table.tables");
 			var htmlText = "";
 			htmlText += "<div>";
 			if (g_beyond_options[ALLIANCE_04]) {
@@ -2253,12 +2328,15 @@ function allianceTabControl() {
 						q$("#result_csv").val("領地取得中です。しばらくお待ち下さい。");
 
 						// 同盟名を取得
-						var alliance_name = q$("table[class='commonTables'] tbody tr").eq(1).children('td').text().replace(/[ \t\r\n]/g, "");
+						var alliance_name = q$("table.commonTables:eq(0) tbody tr").eq(1).children('td').text().replace(/[ \t\r\n]/g, "");
+						if (isGonin) {
+							alliance_name = q$("table.commonTables:eq(0) tbody tr").eq(1).children('td').text().split(/[\r\n]/)[1].replace(/[ \t\r\n]/g, "");
+						}
 
 						// 所属同盟員の鯖内IDを全て取得
 						var users = new Array();
 						var usernames = new Array();
-						var elems = q$("table[class='tables'] tbody tr");
+						var elems = q$("table.tables tbody tr");
 						for (var i = 2; i < elems.length; i++) {
 							var userid = elems.eq(i).children('td').eq(1).children('a').attr('href').replace(/^.*user_id=/,'');
 							var name = elems.eq(i).children('td').eq(1).text().replace(/[ \t\r\n]/g, "");
@@ -2293,7 +2371,7 @@ function allianceTabControl() {
 								})
 								.done(function(res){
 									var resp = q$("<div>").append(res);
-									var landelems = q$("#gray02Wrapper table[class='commonTables'] tr", resp);
+									var landelems = q$("#gray02Wrapper .profileTable tr", resp);
 									var rowct = 0;
 									for (var n = 0; n < landelems.length; n++) {
 										if (landelems.eq(n).children('th').eq(0).text() == '名前') {
@@ -2354,7 +2432,7 @@ function allianceTabControl() {
 				}
 
 				// 本拠地列を作る
-				var elems = q$("table[class='tables'] tbody tr");
+			var elems = q$("table.tables tbody tr");
 				var coln = elems.eq(1).children('th').length;
 				var myAlliance = elems.eq(1).text().replace(/[ \t\r\n,]/g, "").indexOf('ログイン') >= 0;
 				for (var i = 1; i < elems.length; i++) {
@@ -2391,7 +2469,7 @@ function allianceTabControl() {
 						// 所属同盟員の鯖内IDを全て取得
 						var users = [];
 						var usernames = [];
-						var elems = q$("table[class='tables'] tbody tr");
+						var elems = q$("table.tables tbody tr");
 						var myAlliance = elems.eq(1).text().replace(/[ \t\r\n,]/g, "").indexOf('ログイン') >= 0;
 						for (var i = 2; i < elems.length; i++) {
 							var userid = elems.eq(i).children('td').eq(1).children('a').attr('href').replace(/^.*user_id=/,'');
@@ -2425,7 +2503,7 @@ function allianceTabControl() {
 								.done(function(res){
 									var resp = q$("<div>").append(res);
 									var result = "";
-									var landelems = q$("#gray02Wrapper table[class='commonTables'] tr", resp);
+									var landelems = q$("#gray02Wrapper .profileTable tr", resp);
 									var rowct = 0;
 									for (var n = 0; n < landelems.length; n++) {
 										if (landelems.eq(n).children('th').eq(0).text() == '名前') {
@@ -2883,7 +2961,7 @@ function deckTabControl() {
 						q$("div[class='front'] span[class='status_frontback']").append(
 							"<span class='status_levelup'>" +
 								"<a href='" + BASE_URL + "/card/status_info.php?cid=" + cid + "'>" +
-									"<img src='/20160620-01/extend_project/w945/img/card/common/btn_levelup.png' alt='ステータス強化' title='ステータス強化' class='levelup'>" +
+									"<img src='/20240402-01/BscROi7Vz9V1KQRhS5v3IDqASJOBMbShEHSmE3v+WhU=/20240402-01/extend_project/w945/img/card/common/btn_levelup.png' alt='ステータス強化' title='ステータス強化' class='levelup'>" +
 								"</a>" +
 							"</span>"
 						);
@@ -2894,7 +2972,7 @@ function deckTabControl() {
 	}
 
 	// 倉庫画面
-	if (location.pathname === "/card/card_stock_file.php" || location.pathname === "/card/card_stock.php" || location.pathname === "/card/card_stock_file_confirm.php") {
+	if (location.pathname === "/card/card_stock_file.php" || location.pathname === "/card/card_stock.php" || location.pathname === "/card/card_stock_file_confirm.php" || location.pathname === "/card/card_stock_confirm.php") {
 		execStockPart();
 	}
 
@@ -3885,6 +3963,9 @@ function execCommonPart() {
 
 		var loc = q$("li.gnavi02 a").attr('href');
 		var bigloc = loc.replace('/map.php?', '/big_map.php?');
+		var eleloc = loc.replace('/map.php?', '/elevation_map.php?');
+		var _3dloc = loc.replace('/map.php?', '/3d_map.php?');
+        var widloc = loc.replace('/map.php?', '/wide_map.php?');
 
 		var cur_x = 0;
 		var cur_y = 0;
@@ -3925,26 +4006,43 @@ function execCommonPart() {
 				],
 			],
 			// 全体地図
-			[
-				['11x11', loc + '&type=1'], ['21x21', loc + '&type=5'], ['51x51', loc + '&type=4'], ['スクロール21x21', bigloc + '&type=6&ssize=21'], ['スクロール51x51', bigloc + '&type=6&ssize=51'],
+		[
+				['21x21', eleloc + '&map_size=21'], ['41x41', eleloc + '&map_size=41'], ['91x91', widloc], ['3D', _3dloc], ['旧51x51', bigloc + '&type=4'],
 			],
 			// 同盟
 			[
+				['伍人組', alurl + '/squad.php'],
 				['友軍状況', alurl + '/friendly_army.php'],
-				['同盟ログ', BASE_URL + '/alliance/alliance_log.php',
+				['遷都状況', alurl + '/castle_transfer.php'],
+				['同盟ログ', alurl + '/alliance_log.php',
 					[
 						['全て', alogurl], ['攻撃', alogurl + '?m=attack'], ['防御', alogurl + '?m=defense'], ['偵察', alogurl + '?m=scout'],
 						['破壊', alogurl + '?m=fall'], ['援軍', alogurl + '?m=reinforcement'], ['友軍', alogurl + '?m=friendly_army'], ['同盟', alogurl + '?m=alliance'],
 					],
 				],
 				['ランキング', alurl + '/ranking.php'], ['勢力リスト', alurl + '/dependency.php'], ['同盟掲示板', BASE_URL + '/bbs/topic_view.php'],
-				['同盟スキル', alurl + '/alliance_skill.php'],
+			['同盟スキル', alurl + '/alliance_skill.php'],
+				['助力履歴', alurl + '/assist_history.php'],
 				['管理', alurl + '/manage.php'],
 				['配下同盟管理', alurl + '/manage_dep.php'],
 			],
 			// デッキ
 			[
 				['城トップ', facurl + '/castle.php'],
+                 ['部隊戦', BASE_URL +  '/npc_expedition/?stage_category=2',
+					[
+						 ['EX1部隊戦5', BASE_URL + '/npc_expedition/index.php?stage_category=2&stage_id=2005'],
+				　　　　	 ['EX2部隊戦9', BASE_URL + '/npc_expedition/index.php?stage_category=2&stage_id=2009'],
+                         ['EX3部隊戦12', BASE_URL + '/npc_expedition/index.php?stage_category=2&stage_id=2012'],
+				],
+                 ],
+                  ['武将戦', BASE_URL +  '/npc_expedition/?stage_category=1',
+					[
+						 ['EX1武将戦7', BASE_URL + '/npc_expedition/index.php?stage_category=1&stage_id=1007'],
+				　　　　	 ['EX2武将戦15', BASE_URL + '/npc_expedition/index.php?stage_category=1&stage_id=1015'],
+                         ['EX3武将戦20', BASE_URL + '/npc_expedition/index.php?stage_category=1&stage_id=1020'],
+				],
+                 ],
 				['兵士管理', facsturl,
 					[
 						['全て', facsturl + '?type=all'], ['待機', facsturl + '?type=wait'], ['援軍先待機', facsturl + '?type=help_wait'],
@@ -3985,6 +4083,8 @@ function execCommonPart() {
 								['鹵獲', BASE_URL + '/council/order.php?order_type=3'],
 								['援軍', BASE_URL + '/council/order.php?order_type=4'],
 								['友軍', BASE_URL + '/council/order.php?order_type=5'],
+                                ['偵察', BASE_URL + '/council/order.php?order_type=8'],
+								['兵器', BASE_URL + '/council/order.php?order_type=9'],
 								['南蛮', BASE_URL + '/council/order.php?order_type=6'],
 								['回復', BASE_URL + '/council/order.php?order_type=7'],
 							],
@@ -4000,9 +4100,11 @@ function execCommonPart() {
 								['名声獲得', BASE_URL + '/council/arms.php?council_function_id=207'],
 							],
 						],
+                     ['盟・伍', BASE_URL + '/council/?tab=8'],
 						['農村', BASE_URL + '/council/?tab=3'],
 						['設計', BASE_URL + '/council/?tab=4'],
 						['南蛮', BASE_URL + '/council/?tab=5'],
+   						['北伐', BASE_URL + '/council/?tab=6'],
 					],
 				],
 				['合成', BASE_URL + '/union/index.php',
@@ -4146,6 +4248,7 @@ function execCommonPart() {
 						['制圧', BASE_URL + '/alliance/npc_mastery_ranking.php'],
 						['総合', BASE_URL + '/alliance/list.php'],
 						['週間', BASE_URL + '/alliance/weekly_ranking.php'],
+						['北伐出陣', BASE_URL + '/alliance/npc_expedition.php'],
 					],
 				],
 				['個人', BASE_URL + '/user/ranking.php',
@@ -4162,6 +4265,7 @@ function execCommonPart() {
 						['破砕スコア', BASE_URL + '/user/ranking.php?m=destroy_score'],
 						['デュエル', BASE_URL + '/user/ranking.php?m=duel'],
 						['南蛮襲来', BASE_URL + '/user/ranking.php?m=npc_assault'],
+						['北伐出陣', BASE_URL + '/user/ranking.php?m=npc_expedition'],
 						['期間', BASE_URL + '/user/period_ranking.php'],
 						['週間', BASE_URL + '/user/weekly_ranking.php'],
 					],
@@ -4645,6 +4749,10 @@ function execFacilityPart() {
 			}
 		);
 	}
+
+	if (g_beyond_options[DECK_23] == true) {
+		q$("#all .commonTables td a").prop("onclick", null).off("click");
+	}
 }
 
 //--------------------//
@@ -4983,15 +5091,14 @@ function execUnionPart() {
 			);
 
 			// レベルアップ選択ラジオボタンの描画
-			var skills = q$("#gray02Wrapper div[class*='right'] ul[class^='back_skill'] li:not([class='subgeneral']) span:not([class^='skillComment'])");
-			var stats = q$("#gray02Wrapper div[class*='right'] ul[class^='back_skill'] li a[class*=btn_detail_s]");
-			for (var i = 0; i < skills.length && i < stats.length; i++) {
-				var skillText = skills.eq(i).text().replace(/[ \t\r\n]/g, "");
-				if (skillText == "") {
-					// 副将スキルは無視
-					continue;
+			var skills = q$("#gray02Wrapper div[class*='right'] ul[class^='back_skill'] li");
+			skills.each(function(i){
+				var skillText = q$("span[class^='skillName']", this).text().replace(/[ \t\r\n]/g, "");
+				var stat = q$("a[class*=btn_detail_s]", this);
+				if (skillText.length === 0 || stat.length === 0) {
+					return true; //continue-each
 				}
-				var match = stats.eq(i).attr('onclick').match(/Thick\('(.....)([0-9])',/);
+				var match = stat.attr('onclick').match(/Thick\('(.....)([0-9])',/);
 				if (match[2] != '9') {
 					q$("#target_skills").append(
 						"<div style='padding: 1px;'>" +
@@ -5009,7 +5116,7 @@ function execUnionPart() {
 						"</div>"
 					);
 				}
-			}
+			});
 
 			// 検索
 			q$("#multi_levelup_start").on('click',
@@ -5112,12 +5219,7 @@ function execUnionPart() {
 										continue;
 									}
 
-									// 2つ目のスキルを保持するカードは無視する
-									var second_skill = q$("div[class*='right'] table[class^='statusParameter2'] tbody tr", cards[i]).eq(3).children('td').text();
-									second_skill = second_skill.replace(/[ \t]/g, "");
-									if (second_skill != "") {
-										continue;
-									}
+									
 
 									// 素材IDを取得
 									var match = q$("div[id*='cardWindow_']", cards[i]).attr('id').match(/cardWindow_([0-9].*)/);
@@ -5247,7 +5349,7 @@ function execUnionPart() {
 
 					q$("div[class^='left']", cards[i]).eq(0).append(
 						'<a href=' + BASE_URL + '/union/lvup.php?cid=' + card_id + '>' +
-							'<img style="width: 90%; cursor: pointer;" src="/20161222-01/extend_project/w945/img/union/btn_levelupskill_mini.png" alt="ベースカードをこのカードに変更" title="ベースカードをこのカードに変更">' +
+							'<img style="width: 100%; cursor: pointer;" src="/BscROi7Vz9V1KQRhS5v3IDqASJOBMbShEHSmE3v+WhU=/20240402-01/extend_project/w945/img/union/btn_levelupskill_mini.png" alt="ベースカードをこのカードに変更" title="ベースカードをこのカードに変更">' +
 						'</a>'
 					);
 				}
@@ -5535,8 +5637,8 @@ function execStockPart() {
 	// テーブルアクセス用のリスト
 	var tbllist = q$("table[class='tbl_cards_list'] tbody tr");
 
-	// カードNo.をトレードリンクにし、図鑑へのリンクを付与
-	if (g_beyond_options[DECK_02] == true) {
+	// トレードへのリンクを追加
+	if (g_beyond_options[DECK_02] == true && location.pathname !== "/card/card_stock_confirm.php" && location.pathname !== "/card/card_stock_file_confirm.php") {
 
 		// スキル名変換列の決定
 		var skill_col = 6;
@@ -5547,10 +5649,19 @@ function execStockPart() {
 		for (var i = 0; i < tbllist.length; i++) {
 			var tdlist = tbllist.eq(i).children("td");
 
-			// ID列
+			// カードNo.をトレードリンクにし、図鑑へのリンクを付与
+			var id = tdlist.eq(2).text().trim();
+			var replaced = "<a href='trade.php?s=price&o=a&t=no&k=" + id + "&tl=1&r_l=1&r_ur=1&r_sr=1&r_r=1&r_uc=1&r_c=1&r_pr=&r_hr=&r_lr=&lim=1' target='_blank'>" + id + "</a>" +
+				"<br><a href='" + BASE_URL + "/card/busyo_data.php?search_options=&q=&status=&ability_type=&ability_value=&sort=card-no-asc&search_mode=detail&view_mode=&double_skill_height=&card_number=" + id + "' target='_blank'>(図鑑)</a>"
+
+            if (location.pathname === "/card/card_stock.php") {
+                replaced += '<input type="hidden" value="' + id+ '" name="move_card_data[' + i + '][card_number]">';
+            }
+            tdlist.eq(2).html(replaced);
+
 			// スキル名にトレードリンクを付与
 			var skills = tdlist.eq(skill_col).html().replace(/[ \t\r\n]/g, "").split("<br>");
-			var replaced = "";
+			replaced = "";
 			for (var j = 0; j < skills.length; j++) {
 				var match = skills[j].match(/(.*)(LV[0-9]*)/);
 				if (match) {
@@ -5611,6 +5722,31 @@ function execStockPart() {
 		}
 	}
 }
+// 倉庫からファイルに移動する画面へ一括ラベル機能を追加
+	if (g_beyond_options[DECK_71] == true) {
+		if (location.pathname === "/card/card_stock_confirm.php" && q$("#form_cards_list").length > 0) {
+			// 選択肢をつくる
+			var sel = q$("#form_cards_list td.td_cards_list:nth-child(6) > select:nth-child(1)").eq(0).clone(false, false);
+			sel.removeAttr("name");
+			sel.change(function(){
+				var selected_label = q$(this).val();
+				q$("#tbl_cards_list td.td_cards_list:nth-child(6) > select").each(function(){
+					q$(this).val(selected_label);
+				});
+			});
+
+			// 画面へ追加
+			q$("<div />", {
+				id: "set_move_card_data",
+				style: "text-align: right; maring: 4px;"
+			})
+				.append(
+					q$("<span />", { style: "margin: 4px;" }).append("一括ラベル"),
+					sel
+				)
+				.insertBefore(q$("#tbl_cards_list"));
+		}
+	}
 
 //------------------------//
 // トレード履歴画面の処理 //
@@ -6130,12 +6266,14 @@ function draw_setting_window(append_target) {
 					<div style='font-weight: bold'>倉庫画面</div> \
 					<div style='margin-left: 8px;'> \
 						<div><input type='checkbox' id='" + DECK_61 + "'><label for='" + DECK_61 + "'>スキル3つ以上、レベル50、スコア100万のいずれかに該当するカードを倉庫へ移動できなくする</label></input></div> \
+                        <div><input type='checkbox' id='" + DECK_71 + "'><label for='" + DECK_71 + "'>倉庫からファイルに移動する画面へ一括ラベル機能を追加</label></input></div> \
 					</div> \
 					<br> \
 					<div style='font-weight: bold'>領地一覧画面</div> \
 					<div style='margin-left: 8px;'> \
 						<div><input type='checkbox' id='" + DECK_21 + "'><label for='" + DECK_21 + "'>領地一覧の並び方を初期状態に戻す</label></input></div> \
 						<div><input type='checkbox' id='" + DECK_22 + "'><label for='" + DECK_22 + "'>「新領地」で始まる領地を全て破棄する機能を追加</label></input></div> \
+						<div><input type='checkbox' id='" + DECK_23 + "'><label for='" + DECK_23 + "'>領地LVUP時のアラートを抑制</label></input></div> \
 					</div> \
 				</div> \
 				<div id='tab-report'> \
@@ -6415,14 +6553,13 @@ function deck_resttime_checker() {
 					"</div>" +
 				"</fieldset>" +
 				"<div id='search-result-div' class='roundbox' style='display: none;'>" +
-					"<div style='padding: 4px;'>" +
+					"<div style='padding: 2px;'>" +
 						"<span style='font-weight: bold; color: red;'>スキル検索結果</span>" +
-						"<input type='button' id='close_search_file' style='margin: 4px;' value='閉じる'>&nbsp;" +
-						"<div style='overflow-y: auto; max-height: 500px;'>" +
-							"<table id='search-result' style='font-size: 8pt; display: none; margin-right: 25px;'>" +
+						"<input type='button' id='close_search_file' style='margin: 2px;' value='閉じる'>&nbsp;" +
+						"<div style='overflow-y: auto; max-height: 1050px;'>" +
+							"<table id='search-result' style='font-size: 1pt; display: none; margin-right: 50px;'>" +
 							"</table>" +
 						"</div>" +
-						"<input type='button' id='close_search_file' style='margin: 4px;' value='閉じる'>&nbsp;" +
 					"</div>" +
 				"</div>" +
 			"</div>" +
@@ -6430,47 +6567,49 @@ function deck_resttime_checker() {
 	);
 
 	// 検索
-    var isInitialClick = true;
-    var searchSkillInput = q$("#search_skill");
-    var searchFileButton = q$("#search_file");
-        function handleSearch() {
-        var target = searchSkillInput.val().replace(/[ \t　]/g, "");
-        if (target == "") {
-            alert("検索するスキル名を入力してください。");
-            return;
-        }
-        searchFileButton.val("処理実行中").prop("disabled", true);
-        q$("#search-result-div").css({'display':'none'});
-        q$("#search-result").css({'display':'none'});
-        q$("#search-result tr").remove();
-        search_skills(target);
-    }
+	var isInitialClick = true;
+	var searchSkillInput = q$("#search_skill");
+	var searchFileButton = q$("#search_file");
 
-    q$("#search_file").on('click', function(event) {
-        if (isInitialClick) {
-            isInitialClick = false;
-            return;
-        }
-        event.preventDefault();
-        handleSearch();
-    });
+	function handleSearch() {
+		var target = searchSkillInput.val().replace(/[ \t　]/g, "");
+		if (target == "") {
+			alert("検索するスキル名を入力してください。");
+			return;
+		}
+		searchFileButton.val("処理実行中").prop("disabled", true);
 
-    searchSkillInput.on('keydown', function(event) {
-        if (event.keyCode === 13) {
-            if (isInitialClick) {
-                isInitialClick = false;
-                return;
-            }
-            event.preventDefault();
-            handleSearch();
-        }
-    });
+		q$("#search-result-div").css({'display':'none'});
+		q$("#search-result").css({'display':'none'});
+		q$("#search-result tr").remove();
+		search_skills(target);
+	}
 
-    q$("#search_skill").on('click', function(event) {
-        if (event.target === searchSkillInput[0]) {
-            isInitialClick = false;
-        }
-    });
+	q$("#search_file").on('click', function(event) {
+		if (isInitialClick) {
+			isInitialClick = false;
+			return;
+		}
+		event.preventDefault();
+		handleSearch();
+	});
+
+	searchSkillInput.on('keydown', function(event) {
+		if (event.keyCode === 13) {
+			if (isInitialClick) {
+				isInitialClick = false;
+				return;
+			}
+			event.preventDefault();
+			handleSearch();
+		}
+	});
+
+	q$("#search_skill").on('click', function(event) {
+		if (event.target === searchSkillInput[0]) {
+			isInitialClick = false;
+		}
+	});
 
 	// 閉じる
 	q$("input[id='close_search_file']").on('click',
@@ -6562,10 +6701,9 @@ function deck_resttime_checker() {
 							var skillTexts = q$("#cardWindow_" + cid, cards.eq(i));
 
 							// 基礎情報(武将名、武将レベル、コスト）
-                            var cname = q$("div[class^='illustMini__div--name']", cards.eq(i)).text();
+ 							var cname = q$("div[class^='illustMini__div--name']", cards.eq(i)).text();
 							var info = q$("table[class='statusParameter1'] tbody tr", cards.eq(i));
-//							var cname = q$("td", info.eq(1)).eq(0).text();
-							var clevel = q$("td", info.eq(2)).eq(0).text();
+							var clevel = q$("td", info.eq(1)).eq(0).text();
 							var cost = q$("td", info.eq(3)).eq(0).text();
 							var chp = q$("td", info.eq(5)).eq(0).text();
 							var cno = q$("td", info.eq(0)).eq(0).text();
@@ -6574,12 +6712,10 @@ function deck_resttime_checker() {
 							var info2 = q$("div[class='kaifuku_cnt']", cards.eq(i));
 							var skills = [];
 							for (var j = 2; j < info2.length || j <= 5; j++) {
-                                // 副将スキルは外す (2023/05.26 by ぷらじ)
-//                                var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "").replace(/^.*:/, "");
-                                var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "");
-                                if (skill.match(/^副/) != null) continue;
-                                skill = skill.replace(/^.*:/, "");
-
+								// 副将スキルは外す (2023/05/26 by pla2999)
+								var skill = q$("b", info2).eq(j).text().replace(/[ \t]/g, "");
+								if (/^副/.test(skill)) continue;
+								skill = skill.replace(/^.*:/, "");
 								var rest = q$("p", info2).eq(j).text().replace(/[\t]/g, "");
 								skills.push({name: skill, rest: rest});
 							}
@@ -6651,32 +6787,29 @@ function deck_resttime_checker() {
 								var chkb = b.skills[0].skill.rest.replace(/[: -]/g, "");
 								if (!isNaN(parseInt(chka)) && !isNaN(parseInt(chkb))) {
 									return parseInt(chka) < parseInt(chkb) ? -1 : 1;
-//								}
-//								if (a.skills[0].skill.rest == "回復済み") {
-//									return -1;
 								}
 								if (a.skills[0].skill.rest == "回復済み") {
-                                    if (b.skills[0].skill.rest == "回復済み") {
-                                        return 0;
-                                    } else {
-                                        return -1;
-                                    }
+									if (b.skills[0].skill.rest == "回復済み") {
+										return 0;
+									} else {
+										return -1;
+									}
 									return a.skills[0].page < b.skills[0].page ? -1 : 1;
-                                }
+                                 }
 								if (b.skills[0].skill.rest == "回復済み") {
 									return 1;
 								}
 								if (!isNaN(parseInt(chka))) {
 									return -1;
 								}
-                                return a.skills[0].page < b.skills[0].page ? -1 : 1;
+								return a.skills[0].page < b.skills[0].page ? -1 : 1;
 							}
 						);
 
 						// 結果描画
 						var tr = "<tr>" +
 									 "<th class='tpad'>武将名</th>" +
-									 "<th class='tpad'>Lv.</th>" +
+									 "<th class='tpad'>カードID.</th>" +
 									 "<th class='tpad'>HP</th>" +
 									 "<th class='tpad'>ｺｽﾄ</th>" +
 									 "<th class='tpad'>ラベル</th>";
@@ -6699,7 +6832,7 @@ function deck_resttime_checker() {
 							}
 							var tr = "<tr>" +
 								"<td class='tpad'>" + result[i].name + "</td>" +
-								"<td class='tpad'>" + result[i].level + "</td>" +
+								"<td class='tpad'>" + result[i].cardid + "</td>" +
 								"<td class='tpad' " + st + ">" + result[i].hp + "</td>" +
 								"<td class='tpad'>" + result[i].cost + "</td>" +
 								"<td class='tpad' style='padding-left: 4px; padding-right: 4px;'>" + result[i].selector + "</td>";
@@ -6725,15 +6858,14 @@ function deck_resttime_checker() {
 											"<span style='cursor: pointer; color: " + color + ";'>[スキル使用]</span>" +
 											"</td>";
 									} else {
-//										tr += "<td class='tpad'>" + result[i].skills[j].skill.rest + "</td>";
-                                        var recovery_time = result[i].skills[j].skill.rest;
-                                        if (/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(recovery_time)) {
-                                            var remain_time = parseInt((new Date(recovery_time) - new Date())/(1000 * 60));
-                                            tr += "<td class='tpad'>" + recovery_time + "(" + remain_time + "分)" + "</td>";
-                                        } else {
-                                            tr += "<td class='tpad'>" + recovery_time + "</td>";
-                              　          }
-　　                                    }
+										var recovery_time = result[i].skills[j].skill.rest;
+										if (/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(recovery_time)) {
+											var remain_time = parseInt((new Date(recovery_time) - new Date())/(1000 * 60));
+											tr += "<td class='tpad'>" + recovery_time + "(" + remain_time + "分)" + "</td>";
+										} else {
+											tr += "<td class='tpad'>" + recovery_time + "</td>";
+										}
+									}
 								} else {
 									tr += "<td class='tpad'>-</td>" +
 											"<td class='tpad'>-</td>";
@@ -7020,9 +7152,9 @@ function multipleLabelSet(is_move_top_card_count) {
 							multiple_labe_set_finalstep(selected_label, cids);
 						}
 
- 						wait = false;
+						wait = false;
 					});
-				}, AJAX_REQUEST_INVERVAL
+				}, AJAX_REQUEST_INTERVAL
 			);
 		}
 	);
@@ -7141,18 +7273,20 @@ function multipleDeckSet() {
 			var select_target = q$("#multiple_set_mode option:selected").val();
 
 			// 選択した設定先拠点
-			var select_village = q$("#multiple_set_village option:selected").val();
+			var selected = q$("#multiple_set_village option:selected");
+			var select_village = selected.val();
+            var village_kind = selected.index() === 0 ? 1: 2;
 
             // 選択したデッキ
             var select_mode = q$("input[name='deck_mode']").val();
 
-console.log("select_mode: " + select_mode);
             // ラベル取得
 			var label = 0;
             var match = location.search.match(/l=(\d+)/);
 			if (match != null) {
 				label = match[1];
 			}
+
             var cur_page = 1;
             match = location.search.match(/p=(\d+)/);
             if (match != null) {
@@ -7166,9 +7300,9 @@ console.log("select_mode: " + select_mode);
             }
 
             var target_url = BASE_URL + '/card/deck.php?deck_mode=' + select_mode+ url_params;
-console.log("target_url: " + target_url);
+
             history.pushState({}, "", target_url);
-//          location.reload();
+
 
             var max_page = 1;
             var freecost;
@@ -7183,12 +7317,10 @@ console.log("target_url: " + target_url);
             .done(function(res) {
 //                var resp = q$("<div>").append(res);
                 // コスト抽出
-//console.log(q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='" + select_mode + "']").text());
-var temp = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='1']");
-console.log("Query: " + temp.html() + " length: " + temp.length);
-//                var match = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='" + select_mode + "']").text().match(/\d+(\.\d+)?/g);
-                // なぜか data-deck-kind=1 を含むタグの一個目が通常デッキ、2個目が警護デッキのコスト
-                var match = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='1']").eq(select_mode - 1).text().match(/\d+(\.\d+)?/g);
+
+                // タグの一個目が通常デッキ、2個目が警護デッキのコスト
+//                var match = q$("div[class='number cost deck-cost__div'] div[class='state'] span[class='volume'][data-deck-kind='1']").eq(select_mode - 1).text().match(/\d+(\.\d+)?/g);
+                var match = q$("div[class='deck-all-tab-element clearfix'] div[class='number clearfix'] span[class='volume'][data-deck-kind='" + village_kind + "']").eq(select_mode - 1).text().match(/\d+(\.\d+)?/g);
 console.log("match: " + match + " length: " + match.length);
 console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
                 freecost = parseFloat(match[1]) - parseFloat(match[0]);
@@ -7215,7 +7347,7 @@ console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
 
 			// ファイルの検索
 			var wait = false;
-//	    	var count = 1;
+ //	    	var count = 1;
 			var generals = [];
 			var general_ct = 0;
             var used = [];
@@ -7228,7 +7360,8 @@ console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
 					wait = true;
 
 					q$("#multiple_deckset_status").text("一括デッキセット 対象検索中 (" + cur_page + "/" + max_page + " page(s)), 候補武将数：" + general_ct);
-                   if (label != 0) {
+
+                    if (label != 0) {
                         params = {'p': cur_page, 'l' : label};
                     } else {
                         params = {'p': cur_page};
@@ -7276,7 +7409,7 @@ console.log("match[0]: " + match[0] + " match[1]: " + match[1]);
 									continue;
 								}
 
-                               var card_no = parseInt(q$("td", info.eq(0)).eq(0).text());
+                                 var card_no = parseInt(q$("td", info.eq(0)).eq(0).text());
                                 if (q$.inArray(card_no, used) != -1) {
 console.log("card_no: " + card_no + " already used!");
                                     continue;
@@ -7481,7 +7614,7 @@ function addDropDeckCard() {
 	}
 
 	// ファイルに戻すボタンのイベントを書き換える
-		var deckcards = q$(".deck_tab:eq(0) div[class^='cardColmn']");
+	var deckcards = q$(".deck_tab div[class^='cardColmn']");
 	for (var i = 0; i < deckcards.length; i++) {
 		var base = q$("div[class='clearfix']", deckcards.eq(i));
 		var inner_a = base.children('a');
@@ -7494,8 +7627,8 @@ function addDropDeckCard() {
 				base.children('span').on(
 					'click', function() {
 
-                        var match = q$(this).attr('id').match(/_([0-9].*)/);
-						card_id = match[1];
+						var match = q$(this).attr('id').match(/_([0-9].*)/);
+						var card_id = match[1];
 
 						// 状態更新
 						var elem = q$(this);
@@ -7573,8 +7706,8 @@ function addDropDomesticDeckCard() {
 		var match = q$("dd[class='btm_none'] a", base).attr('href').match(/village_change.php\?village_id=(\d+)/);
 
 		q$("img[class='btn_deck_set_s']", base).replaceWith(
-			"<span class='btn_deck_set_s' id='drop_vid_" + match[1] + "' style='font-weight: bold; vertical-align: middle; height: 33px;'>" +
-				"<input value='ファイルに下げる' type='button'></input>" +
+			"<span class='btn_deck_set_s' id='drop_vid_" + match[1] + "' style='font-weight: bold; vertical-align: middle; height: 37px;'>" +
+				"<input value='ファイルに下げる' type='button' style='height: 37px'></input>" +
 			"</span>"
 		);
 
@@ -8169,8 +8302,8 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 				if (is_active == true) {
 					el.before(
 						"<div>" +
-							"<input type='button' id='deck_domestic_" + i + "' style='font-size: 10px;' value='内政'></input>" +
-							"<input type='button' id='deck_set_" + i + "' style='font-size: 13px;' value='配置'></input>" +
+							"<input type='button' id='deck_domestic_" + i + "' style='font-size: 8px;' value='内政'></input>" +
+							"<input type='button' id='deck_set_" + i + "' style='font-size: 12px;' value='配置'></input>" +
 							"<input type='button' id='deck_defense_" + i + "' style='font-size: 10px;' value='警護'></input>" +
 							"<span style='margin-left: 1px; font-size: 12px;'>" +
 								selects.prop('outerHTML') +
@@ -8180,8 +8313,8 @@ function addSkillViewOnSmallCardDeck(is_draw_passive, is_draw_use_link, is_draw_
 				} else {
 					el.before(
 						"<div>" +
-							"<input type='button' style='font-size: 10px;' value='内政' disabled></input>" +
-							"<input type='button' style='font-size: 13px;' value='配置' disabled></input>" +
+							"<input type='button' style='font-size: 8px;' value='内政' disabled></input>" +
+							"<input type='button' style='font-size: 12px;' value='配置' disabled></input>" +
 							"<input type='button' style='font-size: 10px;' value='警護' disabled></input>" +
 							"<span style='margin-left: 1px; font-size: 12px;'>" +
 								selects.prop('outerHTML') +
@@ -8966,9 +9099,9 @@ function tableSorter(selector, offset, index, order_ascend, call_back) {
 	nodes.sort(
 		function(a, b) {
 			var result = 0;
-			if (q$.isNumeric(a.value) && q$.isNumeric(b.value)) {
-				var num1 = parseInt(a.value);
-				var num2 = parseInt(b.value);
+			if (/^[0-9,]+$/.test(a.value.trim()) && /^[0-9,]+$/.test(b.value.trim())) {
+				var num1 = parseInt(a.value.replace(/,/g, ""));
+				var num2 = parseInt(b.value.replace(/,/g, ""));
 				if (num1 < num2) {
 					result = -1;
 				} else if (num1 > num2) {
@@ -9489,8 +9622,8 @@ function show_message_image() {
 
 	var elem_body = q$("#messageBody").html();
 
-	// 展開後gyazoはimgタグを付与
-	var match = elem_body.match(/https:\/\/i.gyazo.com\/[a-z0-9]+\.(png|gif)/g);
+// 展開後gyazoはimgタグを付与
+	var match = elem_body.match(/https:\/\/i.gyazo.com\/[a-z0-9]+\.(png|gif|jpg)/g);
 	if (match != null) {
 		for (var i = 0; i < match.length; i++) {
 			elem_body = elem_body.replace(
@@ -9504,32 +9637,32 @@ function show_message_image() {
 		q$("#messageBody").html(elem_body);
 	}
 
-	// 非展開gyazoはpng->gifの順に展開にトライ
+	// 非展開gyazoはpng->jpgの順に展開にトライ
 	match = elem_body.match(/https:\/\/gyazo.com\/[a-z0-9]+/g);
 	if (match != null) {
 		// まずpngにしてみる
 		for (var i = 0; i < match.length; i++) {
 			var eid = "gimg_" + i;
-			var url = match[i].replace("http://gyazo.com/", "");
+			var url = match[i].replace("https://gyazo.com/", "");
 			elem_body = elem_body.replace(
-				"http:\/\/gyazo.com\/" + url,
+				"https:\/\/gyazo.com\/" + url,
 				"<span>" +
 					"<div><a href='" + match[i] + "' target='_blank'>" + match[i] + "</a></div>" +
-					"<img id='" + eid + "' src='http://i.gyazo.com/" + url + ".png' style='max-width: 100%; border: 1px solid black;'></img>" +
+					"<img id='" + eid + "' src='https://i.gyazo.com/" + url + ".png' style='max-width: 100%; border: 1px solid black;'></img>" +
 				"</span>"
 			);
 		}
 
 		q$("#messageBody").html(elem_body);
 
-		// だめならgifにし、それでもだめならURLに戻す
+		// だめならjpgにし、それでもだめならURLに戻す
 		for (var i = 0; i < match.length; i++) {
 			var eid = "gimg_" + i;
 			q$("#" + eid).on('error', function() {
 				var vid = q$(this).attr('id');
 				q$("#" + vid).off();
 				var isrc = q$(this).attr('src');
-				isrc = isrc.replace("png", "gif");
+				isrc = isrc.replace("png", "jpg");
 				q$("#" + vid).attr('src', isrc);
 				setTimeout(
 					function() {
@@ -9537,7 +9670,7 @@ function show_message_image() {
 							var vid = q$(this).attr('id');
 							q$("#" + vid).off();
 							isrc = isrc.replace("i.gyazo.com", "gyazo.com");
-							isrc = isrc.replace(".gif", " (展開できませんでした)");
+							isrc = isrc.replace(".jpg", " (展開できませんでした)");
 							q$("#" + vid).parent().html(isrc);
 						});
 					}, 50
@@ -9546,7 +9679,6 @@ function show_message_image() {
 		}
 	}
 }
-
 // 時間整形
 function formatSeconds(remain) {
 	var hour = parseInt(remain / 3600);
@@ -10236,7 +10368,8 @@ function getDefaultOptions() {
 	// 共通
 	settings[COMMON_01] = true;		// 資源タイマー
 	settings[COMMON_02] = true;		// プルダウンメニューを差し替える
-	settings[COMMON_03] = true; 	// 天気予告常時表示
+	settings[COMMON_03] = true;		// 天気予告常時表示
+//settings[COMMON_04] = true;		// 地形1.0 (2024年時点ですべての鯖導入済のため削除)
 
 	// プロフィール
 	settings[PROFILE_01] = true;	// ランキングのリンク追加
@@ -10287,6 +10420,7 @@ function getDefaultOptions() {
 	settings[DECK_1D] = false;		// デッキ：援軍武将を1クリックで撤退させるボタンを追加
 	settings[DECK_21] = true;		// 領地一覧：領地一覧の並び方を初期状態に戻す
 	settings[DECK_22] = true;		// 領地一覧：「新領地」で始まる領地を全て破棄
+   	settings[DECK_23] = true;		// 領地一覧：領地LVUP時のアラートを抑制
 	settings[DECK_31] = true;		// 修行合成でレベルが上がった時に、レベルアップボタンを追加
 	settings[DECK_32] = true;		// 自動スキルレベルアップ合成機能を追加
 	settings[DECK_33] = true;		// スキルレベルアップ合成画面でベースカードの交換機能を追加
@@ -10294,6 +10428,7 @@ function getDefaultOptions() {
 	settings[DECK_35] = true;		// 自動副将枠解放合成機能を追加
 	settings[DECK_51] = true;		// 兵士管理リンクをクリックした際の初期タブを「全て表示」にする
 	settings[DECK_61] = false;		// スキル3つ以上、レベル50、スコア100万のいずれかに該当するカードを倉庫へ移動できなくする
+    settings[DECK_71] = true;		// 倉庫からファイルに移動する画面へ一括ラベル機能を追加
 
 	// 報告書
 	settings[REPORT_01] = true;		// 自動整形機能の追加
