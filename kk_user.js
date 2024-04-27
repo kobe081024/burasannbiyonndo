@@ -1,4 +1,4 @@
-"use strict";
+// ==UserScript==
 
 let options = {};
 let target_tab_id = null;
