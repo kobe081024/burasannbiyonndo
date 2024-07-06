@@ -174,7 +174,7 @@ function rst_contextmenu2(){
                         j$(e.currentTarget).css('background', '#9400d3');
                         j$(e.currentTarget).addClass("focused-res");
                         j$(e.currentTarget).find('a').text('✓');
-                        myContextMenu.classList.remove('show');
+                        
                     });
                     j$("#1click_kyosyu_" + i).on("click", async function(){
                         j$(this).prop("disabled", true); // クリック操作を禁止する
@@ -255,10 +255,10 @@ function sendTrooper(trooperId, troop_x, troop_y, battleType){
                 j$(this).addClass("focused-res");
                 j$(this).find('a').text('⚫︎');
                j$(this).css('background', '#000000');
-
             }
         });
     }
+
 
     // 2023/05/08  地形に対応
     //---------------------
@@ -270,24 +270,24 @@ function sendTrooper(trooperId, troop_x, troop_y, battleType){
                 j$(this).addClass("focused-res");
                 j$(this).css({
                     //'border': '1px solid #fff',
-                    //'border-top-width': '1px',
+                    //'border-top-width': '-1px',
                     //'box-sizing': 'border-box'
                     'border': 'none',
                     'outline': 'none',
                     'outline': '3px solid #fff',
-                    'outline-offset': '-2px'
+                    'outline-offset': '-1px'
                 });
             }
             if ((j$(this).find('a').attr('onmouseover').indexOf("低地"))!=-1){
                 j$(this).addClass("focused-res");
                 j$(this).css({
-                    //'border': '1px solid #dfe5ed',
-                    //'border-top-width': '1px',
+                    //'border': '1px solid  #dfe5ed',
+                    //'border-top-width': '-1px',
                     //'box-sizing': 'border-box'
                     'border': 'none',
                     'outline': 'none',
-                    'outline': '3px solid #dfe5ed',
-                    'outline-offset': '-2px'
+                    'outline': '3px solid  #dfe5ed',
+                    'outline-offset': '-1px'
                 });
             }
             if ((j$(this).find('a').attr('onmouseover').indexOf("高地"))!=-1){
@@ -299,7 +299,7 @@ function sendTrooper(trooperId, troop_x, troop_y, battleType){
                     'border': 'none',
                     'outline': 'none',
                     'outline': '3px solid #c2c28e',
-                    'outline-offset': '-2px'
+                    'outline-offset': '-1px'
                 });
             }
             if ((j$(this).find('a').attr('onmouseover').indexOf("山地"))!=-1){
@@ -311,21 +311,20 @@ function sendTrooper(trooperId, troop_x, troop_y, battleType){
                     'border': 'none',
                     'outline': 'none',
                     'outline': '3px solid #ad8467',
-                    'outline-offset': '-2px'
+                    'outline-offset': '-1px'
                 });
             }
         });
     }
     // 2023/05/08  旧5151がデフォルトマップになるよう修正
     //---------------------
-    //   マップ新UI無効化
+    //   マップ新UI無効化t
     //---------------------
     function linkRenew(){
         console.log("linkRenewed");
         // j$('a[href*="/map.php"]').attr('href', '/big_map.php?type=4');
-        j$('a[href*="/map.php"]').attr('href', function(index, value) {
-            return value.replace('/map.php?', '/big_map.php?type=4?&');
-        });
+        
+       
     }
 //---------------//
 // css定義の追加 //
