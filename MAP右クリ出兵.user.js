@@ -253,7 +253,9 @@ function sendTrooper(trooperId, troop_x, troop_y, battleType){
         j$("div[id=map51-content] ul li").each(function(index){
             if ((j$(this).find('a').attr('onmouseover').indexOf("保護期間中"))!=-1){
                 j$(this).addClass("focused-res");
-                j$(this).find('a').text('＊');
+                j$(this).find('a').text('⚫︎');
+               j$(this).css('background', '#000000');
+
             }
         });
     }
