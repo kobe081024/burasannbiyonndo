@@ -19,6 +19,8 @@
 //                      殲滅と強襲で軌跡の色を分けるよう修正。
 // マップの際際だとマップ表示処理が正常に動作しないバグ何とかしたいなぁ
 
+if (location.pathname != "/big_map.php") return;
+
 // load jQuery
 jQuery.noConflict();
 j$ = jQuery;
@@ -37,7 +39,7 @@ var HOST = location.hostname;        // アクセスURLホスト
 var SERVICE = '';                    // サービス判定が必要な場合に使用する予約定数
 var SVNAME = HOST.substr(0,location.hostname.indexOf(".")) + SERVICE;
 var RST_KEY = "RST_" + HOST.substr(0,HOST.indexOf("."));
-var AJAX_REQUEST_INTERVAL = 200;   // (ms)
+var AJAX_REQUEST_INTERVAL = 100;   // (ms)
 
 // マップデータ保持用
 var m_mapdata1 = [];
@@ -51,6 +53,9 @@ var unfocusedBaseList = [];
 var html_l = "";
 var busyoLength
 (function() {
+
+
+
     //css定義を追加
     rst_addCss();
     var l_setting=rst_getValue(RST_KEY + '_' + RST_SETTING, "");
@@ -174,7 +179,6 @@ function rst_contextmenu2(){
                         j$(e.currentTarget).css('background', '#9400d3');
                         j$(e.currentTarget).addClass("focused-res");
                         j$(e.currentTarget).find('a').text('✓');
-                        
                     });
                     j$("#1click_kyosyu_" + i).on("click", async function(){
                         j$(this).prop("disabled", true); // クリック操作を禁止する
