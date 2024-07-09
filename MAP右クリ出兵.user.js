@@ -163,8 +163,8 @@ function rst_contextmenu2(){
                 myContextMenu = j$('#rst_js-contextmenu').get(0);
                 var posX = e.clientX;
                 var posY = e.clientY;
-                myContextMenu.style.left = (posX + 18)+'px';
-                myContextMenu.style.top = (posY + 18)+'px';
+                myContextMenu.style.left = (posX + 100)+'px';
+                myContextMenu.style.top = (posY -40)+'px';
                 myContextMenu.classList.add('show');
                 console.log(l_match);
 
