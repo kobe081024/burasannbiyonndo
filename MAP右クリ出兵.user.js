@@ -348,6 +348,7 @@ function rst_addCss() {
         border: 2px solid #ccc;\
         box-shadow: 1px 1px 1px rgba(0,0,0,.2);\
         z-index:9999; \
+　　　　　　　font-size: 10px;\
     }\
     .rst_my-contextmenu.show {\
         display: block;\
