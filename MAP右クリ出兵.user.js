@@ -39,7 +39,7 @@ var HOST = location.hostname;        // アクセスURLホスト
 var SERVICE = '';                    // サービス判定が必要な場合に使用する予約定数
 var SVNAME = HOST.substr(0,location.hostname.indexOf(".")) + SERVICE;
 var RST_KEY = "RST_" + HOST.substr(0,HOST.indexOf("."));
-var AJAX_REQUEST_INTERVAL = 100;   // (ms)
+var AJAX_REQUEST_INTERVAL = 200;   // (ms)
 
 // マップデータ保持用
 var m_mapdata1 = [];
@@ -53,9 +53,6 @@ var unfocusedBaseList = [];
 var html_l = "";
 var busyoLength
 (function() {
-
-
-
     //css定義を追加
     rst_addCss();
     var l_setting=rst_getValue(RST_KEY + '_' + RST_SETTING, "");
@@ -152,6 +149,7 @@ function rst_contextmenu2(){
                 // 2023/05/28  big_map.phpの更新に伴う修正
                 // var l_level = j$(e.currentTarget)[0].outerHTML.match(/.*<dd>(★*)<\/dd>*/);
                 var l_level = j$(e.currentTarget)[0].outerHTML.match(/.*<dd>(★.*)\[\d\]<\/dd>*/);
+                if (l_level === null) l_level = j$(e.currentTarget)[0].outerHTML.match(/.>(★.)[\d]*/);
                 j$('#rst_action').append("<li>" +
                 "<label style='margin-left: 3px;'>(" + l_match[1] + ", " + l_match[2] + ") ★" + l_level[1].length + "</label>" +
                 "<table border='1' cellpadding='20'>" +
@@ -164,7 +162,7 @@ function rst_contextmenu2(){
                 var posX = e.clientX;
                 var posY = e.clientY;
                 myContextMenu.style.left = (posX + 100)+'px';
-                myContextMenu.style.top = (posY -40)+'px';
+                myContextMenu.style.top = (posY - 40)+'px';
                 myContextMenu.classList.add('show');
                 console.log(l_match);
 
@@ -179,6 +177,7 @@ function rst_contextmenu2(){
                         j$(e.currentTarget).css('background', '#9400d3');
                         j$(e.currentTarget).addClass("focused-res");
                         j$(e.currentTarget).find('a').text('✓');
+
                     });
                     j$("#1click_kyosyu_" + i).on("click", async function(){
                         j$(this).prop("disabled", true); // クリック操作を禁止する
@@ -327,8 +326,8 @@ function sendTrooper(trooperId, troop_x, troop_y, battleType){
     function linkRenew(){
         console.log("linkRenewed");
         // j$('a[href*="/map.php"]').attr('href', '/big_map.php?type=4');
-        
-       
+
+
     }
 //---------------//
 // css定義の追加 //
@@ -348,7 +347,7 @@ function rst_addCss() {
         border: 2px solid #ccc;\
         box-shadow: 1px 1px 1px rgba(0,0,0,.2);\
         z-index:9999; \
-　　　　　　　font-size: 10px;\
+        font-size: 5px;\
     }\
     .rst_my-contextmenu.show {\
         display: block;\
