@@ -4,7 +4,7 @@
 // @description   右クリックで出兵出来たら便利じゃん？
 // @include       https://*.3gokushi.jp/*
 // @include       http://*.3gokushi.jp/*
-// @version       1.5
+// @version       2.2
 // @require       http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js
 // @resource  jqueryui_css   http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css
 
@@ -18,7 +18,11 @@
 // 1.4      2023/05/08  出兵対象武将の選択方法をラジオボックス選択式 > 出兵ボタンから、各武将単位に出兵ボタンを設置するよう修正。
 //                      殲滅と強襲で軌跡の色を分けるよう修正。
 // マップの際際だとマップ表示処理が正常に動作しないバグ何とかしたいなぁ
+// 2.0	旧51X51マップ以外は動作しないように修正、N砦への出兵に対応、
+// 2.1  N砦への出兵を追加
+// 2.2  城/拠点への出兵を追加
 
+// 旧51X51マップ以外は終了 by ぷらじ
 if (location.pathname != "/big_map.php") return;
 
 // load jQuery
@@ -29,7 +33,7 @@ j$ = jQuery;
 // 変数定義  //
 //----------//
 // ソフトウェアバージョン
-var VERSION = "1.1";
+var VERSION = "2.2";
 var SERVER_NAME = location.hostname.match(/^(.*)\.3gokushi/)[1];
 // 特殊定数
 var SERVER_SCHEME = location.protocol + "//";
@@ -103,7 +107,7 @@ var busyoLength
             });
             // 選択用チェックボックスの作成
             busyoLength = deckIdList.length
-			for (var i = 0; i < busyoLength; i++) {
+		for (var i = 0; i < busyoLength; i++) {
 				var gn = "";
                 if(deckIdList[i].status == "待機中"){
                     gn = "<span style='color: red;'>" + deckIdList[i].name + "</span>";
@@ -125,6 +129,9 @@ var busyoLength
             rst_contextmenu2();
             // 保護期間中エリアの描画
             rst_remove_area2();
+
+            rst_remove_area3();
+
             // 等高線の描画
             reliefMap()
 	    });
@@ -149,7 +156,10 @@ function rst_contextmenu2(){
                 // 2023/05/28  big_map.phpの更新に伴う修正
                 // var l_level = j$(e.currentTarget)[0].outerHTML.match(/.*<dd>(★*)<\/dd>*/);
                 var l_level = j$(e.currentTarget)[0].outerHTML.match(/.*<dd>(★.*)\[\d\]<\/dd>*/);
-                if (l_level === null) l_level = j$(e.currentTarget)[0].outerHTML.match(/.>(★.)[\d]*/);
+		// N砦への出兵 by ぷらじ
+		if (l_level === null) l_level = j$(e.currentTarget)[0].outerHTML.match(/.>(★.)[\d]*/);
+		// 城/拠点への出兵 by ぷらじ
+		if (l_level === null) l_level = ["",""];
                 j$('#rst_action').append("<li>" +
                 "<label style='margin-left: 3px;'>(" + l_match[1] + ", " + l_match[2] + ") ★" + l_level[1].length + "</label>" +
                 "<table border='1' cellpadding='20'>" +
@@ -161,8 +171,8 @@ function rst_contextmenu2(){
                 myContextMenu = j$('#rst_js-contextmenu').get(0);
                 var posX = e.clientX;
                 var posY = e.clientY;
-                myContextMenu.style.left = (posX + 100)+'px';
-                myContextMenu.style.top = (posY - 40)+'px';
+                myContextMenu.style.left = (posX + 18)+'px';
+                myContextMenu.style.top = (posY + 18)+'px';
                 myContextMenu.classList.add('show');
                 console.log(l_match);
 
@@ -252,15 +262,16 @@ function sendTrooper(trooperId, troop_x, troop_y, battleType){
     //---------------------
     //   保護期間中領地
     //---------------------
-    function rst_remove_area2(){
+   function rst_remove_area2(){
         j$("div[id=map51-content] ul li").each(function(index){
             if ((j$(this).find('a').attr('onmouseover').indexOf("保護期間中"))!=-1){
                 j$(this).addClass("focused-res");
-                j$(this).find('a').text('⚫︎');
-               j$(this).css('background', '#000000');
+                j$(this).find('a').text('＋').css('color','white');
+               //j$(this).css('background','#00000000');
             }
         });
     }
+
 
 
     // 2023/05/08  地形に対応
@@ -347,7 +358,7 @@ function rst_addCss() {
         border: 2px solid #ccc;\
         box-shadow: 1px 1px 1px rgba(0,0,0,.2);\
         z-index:9999; \
-        font-size: 5px;\
+        font-size: 10px;\
     }\
     .rst_my-contextmenu.show {\
         display: block;\
